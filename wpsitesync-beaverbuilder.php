@@ -25,7 +25,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
 		const PLUGIN_VERSION = '1.0';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
-		const REQUIRED_VERSION = '1.2';									// minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.3';									// minimum version of WPSiteSync required for this add-on to initialize
 
 		private $_license = NULL;
 
