@@ -1,0 +1,47 @@
+#sync-separator {
+	border-right: 1px solid black;
+	width: 1px;
+	height: 36px;
+	padding: 0;
+	margin: -4px 4px 0 7px;
+}
+
+.sync-button-icon {
+    /* font-size: 115%; */
+    padding-top: 0px;
+    padding-left: 3px;
+    padding-right: 5px;
+    margin-left: -7px;
+margin-top: -3px;
+    /* font-weight: bolder; */
+}
+
+.sync-button-icon-rotate {
+    -moz-transform: rotate(180deg);
+    -ms-transform: rotate(180deg);
+    -o-transform: rotate(180deg);
+    -webkit-transform: rotate(180deg);
+    transform: rotate(180deg);
+    padding-bottom: 0px;
+    padding-left: 3px;
+}
+
+#sync-beaverbuilder-msg {
+	background-color: white;
+	position: absolute;
+	width: 15rem;
+	padding: 5px;
+	margin: 5px;
+	top: 3rem;
+border: 1px solid #4accf6;
+z-index: 1000;
+}
+
+#sync-message-dismiss {
+	color: red;
+	padding-left: .5rem;
+}
+#sync-message-dismiss .dashicons {
+	font-size: 85% !important;
+	vertical-align: baseline;
+}
