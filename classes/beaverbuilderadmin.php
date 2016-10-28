@@ -8,8 +8,10 @@ class SyncBeaverBuilderAdmin
 	{
 		if (isset($_GET['page']) && 'fl-builder-settings' === $_GET['page']) {
 			// only add the script/content on the BB settings page
-			add_action('admin_print_scripts', array($this, 'admin_print_scripts'));
-			add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
+			if (SyncOptions::is_auth()) {
+				add_action('admin_print_scripts', array($this, 'admin_print_scripts'));
+				add_action('admin_enqueue_scripts', array($this, 'admin_enqueue_scripts'));
+			}
 		}
 	}
 

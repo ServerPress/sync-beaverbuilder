@@ -76,7 +76,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 //			add_filter('spectrom_sync_tax_list', array($this, 'filter_taxonomies'), 10, 1);
 
 			// load scripts and content on front end requests
-			if (isset($_GET['fl_builder'])) {
+			if (isset($_GET['fl_builder']) && SyncOptions::is_auth()) {
 				add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
 				add_action('wp_footer', array($this, 'output_html_content'));
 			}
