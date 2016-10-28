@@ -70,7 +70,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 //			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
 //				return;
 
-//			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
+			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 			// use the 'spectrom_sync_api_request' filter to add any necessary taxonomy information
 //			add_filter('spectrom_sync_api_request', array($this, 'add_bb_data'), 10, 3);
 //			add_filter('spectrom_sync_tax_list', array($this, 'filter_taxonomies'), 10, 1);
@@ -332,12 +332,9 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
 			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
 				return $post_types;
 
-			$cpts = get_post_types(array('_builtin' => FALSE));
+			$post_types[] = 'fl-builder-template';
 
-			// we can't handle products and downloads since these use custom tables anyway. remove them.
-			unset($cpts['products']);
-			unset($cpts['downloads']);
-			return array_merge($post_types, $cpts);
+			return $post_types;
 		}
 
 		/**
