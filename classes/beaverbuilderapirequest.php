@@ -66,8 +66,8 @@ class SyncBeaverBuilderApiRequest
 	{
 SyncDebug::log(__METHOD__ . '() action=' . $action);
 
-		if (!WPSiteSync_BeaverBuilder::get_instance()->get_license()->check_license('sync_beaverbuilder', WPSiteSync_BeaverBuilder::PLUGIN_KEY, WPSiteSync_BeaverBuilder::PLUGIN_NAME))
-			return $args;
+//		if (!WPSiteSync_BeaverBuilder::get_instance()->get_license()->check_license('sync_beaverbuilder', WPSiteSync_BeaverBuilder::PLUGIN_KEY, WPSiteSync_BeaverBuilder::PLUGIN_NAME))
+//			return $args;
 
 		if ('pushbeaverbuildersettings' === $action) {
 SyncDebug::log(__METHOD__ . '() args=' . var_export($args, TRUE));

@@ -54,6 +54,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		{
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
 
+			$this->_license = new SyncLicensing();
+//			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
+//				return;
+
 			// check for minimum WPSiteSync version
 			if (is_admin() && version_compare(WPSiteSyncContent::PLUGIN_VERSION, self::REQUIRED_VERSION) < 0 && current_user_can('activate_plugins')) {
 				add_action('admin_notices', array($this, 'notice_minimum_version'));
@@ -65,10 +69,6 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 //				require_once (dirname(__FILE__) . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . 'beaverbuilderadmin.php');
 				SyncBeaverBuilderAdmin::get_instance();
 			}
-
-			$this->_license = new SyncLicensing();
-//			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
-//				return;
 
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 			// use the 'spectrom_sync_api_request' filter to add any necessary taxonomy information
@@ -329,8 +329,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
 		 */
 		public function allow_custom_post_types($post_types)
 		{
-			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
-				return $post_types;
+//			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
+//				return $post_types;
 
 			$post_types[] = 'fl-builder-template';
 
@@ -384,7 +384,7 @@ else if (!isset($data['post_data']['post_type']))
 		public function filter_active_extensions($extensions, $set = FALSE)
 		{
 //SyncDebug::log(__METHOD__.'()');
-			if ($set || $this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
+//			if ($set || $this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
 				$extensions['sync_beaverbuilder'] = array(
 					'name' => self::PLUGIN_NAME,
 					'version' => self::PLUGIN_VERSION,
@@ -393,11 +393,20 @@ else if (!isset($data['post_data']['post_type']))
 			return $extensions;
 		}
 
+		/**
+		 * Helper method to load class files when needed
+		 * @param string $class Name of class file to load
+		 */
 		private function _load_class($class)
 		{
 			$file = dirname(__FILE__) . '/classes/' . $class . '.php';
 			require_once($file);
 		}
+
+		/**
+		 * Returns instance of the licensing object used by this add-on
+		 * @return SyncLicensing Instance of Licensing object
+		 */
 		public function get_license()
 		{
 			return $this->_license;
