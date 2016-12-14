@@ -27,8 +27,6 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
 		const REQUIRED_VERSION = '1.3';									// minimum version of WPSiteSync required for this add-on to initialize
 
-		private $_license = NULL;
-
 		private function __construct()
 		{
 			add_action('spectrom_sync_init', array($this, 'init'));
@@ -54,9 +52,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		{
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
 
-			$this->_license = new SyncLicensing();
-//			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
-//				return;
+			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+SyncDebug::log(__METHOD__.'() no license');
+				return;
+			}
 
 			// check for minimum WPSiteSync version
 			if (is_admin() && version_compare(WPSiteSyncContent::PLUGIN_VERSION, self::REQUIRED_VERSION) < 0 && current_user_can('activate_plugins')) {
@@ -178,7 +177,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix domain from "' . $source_url 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix serialization: ' . var_export($meta_data, TRUE));
 
 						// convert to an object
-						$meta_object = unserialize($meta_data);
+						$meta_object = maybe_unserialize($meta_data);
 
 						// write meta data
 						update_post_meta($target_post_id, $meta_key, $meta_object);
@@ -329,8 +328,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
 		 */
 		public function allow_custom_post_types($post_types)
 		{
-//			if (!$this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
-//				return $post_types;
+			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
+				return $post_types;
 
 			$post_types[] = 'fl-builder-template';
 
@@ -384,7 +383,7 @@ else if (!isset($data['post_data']['post_type']))
 		public function filter_active_extensions($extensions, $set = FALSE)
 		{
 //SyncDebug::log(__METHOD__.'()');
-//			if ($set || $this->_license->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
+			if ($set || WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
 				$extensions['sync_beaverbuilder'] = array(
 					'name' => self::PLUGIN_NAME,
 					'version' => self::PLUGIN_VERSION,
@@ -401,15 +400,6 @@ else if (!isset($data['post_data']['post_type']))
 		{
 			$file = dirname(__FILE__) . '/classes/' . $class . '.php';
 			require_once($file);
-		}
-
-		/**
-		 * Returns instance of the licensing object used by this add-on
-		 * @return SyncLicensing Instance of Licensing object
-		 */
-		public function get_license()
-		{
-			return $this->_license;
 		}
 	}
 }
