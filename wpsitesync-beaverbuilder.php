@@ -214,11 +214,15 @@ SyncDebug::log(__METHOD__.'() found action: ' . $operation);
 		 */
 		public function filter_push_content($data, $apirequest)
 		{
-SyncDebug::log(__METHOD__.'()'); // . var_export($data, TRUE));
+SyncDebug::log(__METHOD__.'()'); //  data=' . var_export($data, TRUE)); // . var_export($data, TRUE));
 			// look for media references and call SyncApiRequest->send_media() to add media to the Push operation
 			if (isset($data['post_meta'])) {
-				$post_id = abs($data['post_id']);
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' psot id=' . $post_id);
+				$post_id = 0;
+				if (isset($data['post_id']))						// present on Push operations
+					$post_id = abs($data['post_id']);
+				else if (isset($data['post_data']['ID']))			// present on Pull operations
+					$post_id = abs($data['post_data']['ID']);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
 				$regex_search = "/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/";
 				$attach_model = new SyncAttachModel();
 				foreach ($data['post_meta'] as $meta_key => $meta_value) {
