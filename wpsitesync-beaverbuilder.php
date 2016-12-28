@@ -234,21 +234,27 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found key: ' . $meta_key);
 						// TODO: look for other media: audio / video
 
 						// check if there is a url in the text
-						if (preg_match($regex_search, $meta_data, $urls)) {
+						$urls = array();
+						if (preg_match_all($regex_search, $meta_data, $urls)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found urls: ' . var_export($urls, TRUE));
-							foreach ($urls as $url) {
-								if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
+							if (isset($urls[0]) && 0 !== count($urls[0])) {
+								$site_url = site_url();
+								// look for only those URL references that match the current site's URL
+								foreach ($urls[0] as $url) {
+//									if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
+									if ($site_url === substr($url, 0, strlen($site_url))) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' syncing image: ' . $url);
-									$attach_id = 0;
-									$attach_posts = $attach_model->search_by_guid($url);
-									foreach ($attach_posts as $attach_post) {
-										if ($attach_post->guid === $url) {
-											$attach_id = $attach_post->ID;
-											break;
+										$attach_id = 0;
+										$attach_posts = $attach_model->search_by_guid($url);
+										foreach ($attach_posts as $attach_post) {
+											if ($attach_post->guid === $url) {
+												$attach_id = $attach_post->ID;
+												break;
+											}
 										}
-									}
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
-									$apirequest->send_media($url, $post_id, 0, $attach_id);
+										$apirequest->send_media($url, $post_id, 0, $attach_id);
+									}
 								}
 							}
 						}
