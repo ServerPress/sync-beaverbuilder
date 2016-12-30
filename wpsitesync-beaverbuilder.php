@@ -231,13 +231,14 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
 				$upload = wp_upload_dir();
 SyncDebug::log(__METHOD__.'() upload info=' . var_export($upload, TRUE));
 				$upload_url = $upload['baseurl'];
-
+				// this sets the source domain- needed for SynApiRequest::send_media() to work
+				$apirequest->set_source_domain(parse_url($site_url, PHP_URL_HOST));
 
 				foreach ($data['post_meta'] as $meta_key => $meta_value) {
 					if ('_fl_builder_' === substr($meta_key, 0, 12)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found key: ' . $meta_key);
 						$meta_data = serialize($meta_value);
-						$meta_data = str_replace('"', ' "', $meta_data);
+						$meta_data = str_replace('"', ' " ', $meta_data);
 						// look for any image references
 						// TODO: look for other media: audio / video
 
@@ -252,16 +253,20 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found urls: ' . var_export($urls,
 									if ($site_url === substr($url, 0, strlen($site_url)) && FALSE !== strpos($url, $upload_url)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' syncing image: ' . $url);
 										$attach_posts = $attach_model->search_by_guid($url);
-SyncDebug::log(__METHOD__.'(): res=' . var_export($attach_posts, TRUE));
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' res=' . var_export($attach_posts, TRUE));
 										// ignore any images that are not found in the Image Library
-										if (0 === count($attach_posts))
+										if (0 === count($attach_posts)) {
+SyncDebug::log(' - no attachments found with this name, skipping');
 											continue;
+										}
 
 										// find the attachment id
 										$attach_id = 0;
 										foreach ($attach_posts as $attach_post) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking guid "' . $attach_post->guid . '"');
 											if ($attach_post->guid === $url) {
 												$attach_id = $attach_post->ID;
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found matching for id#' . $attach_id);
 												break;
 											}
 										}
