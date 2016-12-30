@@ -225,6 +225,14 @@ SyncDebug::log(__METHOD__.'()'); //  data=' . var_export($data, TRUE)); // . var
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
 				$regex_search = "/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/";
 				$attach_model = new SyncAttachModel();
+
+				// set up some values to be used to identify site-specific image references vs. non-site images
+				$site_url = site_url();
+				$upload = wp_upload_dir();
+SyncDebug::log(__METHOD__.'() upload info=' . var_export($upload, TRUE));
+				$upload_url = $upload['baseurl'];
+
+
 				foreach ($data['post_meta'] as $meta_key => $meta_value) {
 					if ('_fl_builder_' === substr($meta_key, 0, 12)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found key: ' . $meta_key);
@@ -238,14 +246,19 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found key: ' . $meta_key);
 						if (preg_match_all($regex_search, $meta_data, $urls)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found urls: ' . var_export($urls, TRUE));
 							if (isset($urls[0]) && 0 !== count($urls[0])) {
-								$site_url = site_url();
 								// look for only those URL references that match the current site's URL
 								foreach ($urls[0] as $url) {
 //									if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
-									if ($site_url === substr($url, 0, strlen($site_url))) {
+									if ($site_url === substr($url, 0, strlen($site_url)) && FALSE !== strpos($url, $upload_url)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' syncing image: ' . $url);
-										$attach_id = 0;
 										$attach_posts = $attach_model->search_by_guid($url);
+SyncDebug::log(__METHOD__.'(): res=' . var_export($attach_posts, TRUE));
+										// ignore any images that are not found in the Image Library
+										if (0 === count($attach_posts))
+											continue;
+
+										// find the attachment id
+										$attach_id = 0;
 										foreach ($attach_posts as $attach_post) {
 											if ($attach_post->guid === $url) {
 												$attach_id = $attach_post->ID;
