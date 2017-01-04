@@ -2,7 +2,7 @@
 /*
 Plugin Name: WPSiteSync for Beaver Builder
 Plugin URI: http://wpsitesync.com
-Description: Allow custom post types to be Synced to the Ttarget site
+Description: Allow custom post types to be Synced to the Target site
 Author: WPSiteSync
 Author URI: http://wpsitesync.com
 Version: 1.0
