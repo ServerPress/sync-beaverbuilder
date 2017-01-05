@@ -16,6 +16,7 @@ function WPSiteSyncContent_BeaverBuilder()
 	this.$push_button = null;
 	this.disable = false;
 	this.success_msg = '';
+	this.content_dirty = false;
 }
 
 /**
@@ -31,8 +32,37 @@ console.log('html=' + html);
 
 	this.$push_button = jQuery('#sync-bb-push');
 
+	jQuery('body').delegate('.fl-builder-settings-save', 'click', WPSiteSyncContent_BeaverBuilder.disable_sync);
+
+//	jQuery('.fl-builder-settings-save').on('click', this.disable_sync);
+//	jQuery('.fl-builder-publish-button').on('click', this.enable_sync);
+//	jQuery('.fl-builder-draft-button').on('click', this.enable_sync);
+//	jQuery('.fl-builder-discard-button').on('click', this.enable_sync);
+
 	this.inited = true;
 //this.set_message('this is a test', true, true);
+};
+
+/**
+ * Disables the Sync Push and Pull buttons after Content is edited
+ */
+WPSiteSyncContent_BeaverBuilder.disable_sync = function()
+{
+console.log('disable_sync() - turning off the button');
+	WPSiteSyncContent_BeaverBuilder.content_dirty = true;
+	jQuery('#sync-bb-push').addClass('sync-button-disable');
+	jQuery('#sync-bb-pull').addClass('sync-button-disable');
+};
+
+/**
+ * Enable the Sync Push and Pull buttons after Content changes are abandoned
+ */
+WPSiteSyncContent_BeaverBuilder.enable_sync = function()
+{
+console.log('disable_sync() - turning on the button');
+	WPSiteSyncContent_BeaverBuilder.content_dirty = false;
+	jQuery('#sync-bb-push').removeClass('sync-button-disable');
+	jQuery('#sync-bb-pull').removeClass('sync-button-disable');
 };
 
 /**
@@ -142,6 +172,10 @@ WPSiteSyncContent_BeaverBuilder.prototype.clear_message = function()
 WPSiteSyncContent_BeaverBuilder.prototype.push = function(post_id)
 {
 console.log('.push(' + post_id + ')');
+	if (WPSiteSyncContent_BeaverBuilder.content_dirty) {
+		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
+		return;
+	}
 	this.success_msg = '#sync-msg-success';
 	this.set_message(jQuery('#sync-msg-starting-push').html(), true);
 	this.api(post_id, 'push');
@@ -154,6 +188,10 @@ console.log('.push(' + post_id + ')');
 WPSiteSyncContent_BeaverBuilder.prototype.pull = function(post_id)
 {
 console.log('.pull(' + post_id + ')');
+	if (WPSiteSyncContent_BeaverBuilder.content_dirty) {
+		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
+		return;
+	}
 	this.success_msg = '#sync-msg-pull-success';
 	this.set_message(jQuery('#sync-msg-starting-pull').html(), true);
 	this.api(post_id, 'pull');
@@ -170,6 +208,7 @@ console.log('.pull_disabled(' + post_id + ')');
 };
 
 // create the instance of the Beaver Builder class
+// TODO: add this to the main WPSS object
 wpsitesync_beaverbuilder = new WPSiteSyncContent_BeaverBuilder();
 
 // initialize the WPSiteSync operation on page load

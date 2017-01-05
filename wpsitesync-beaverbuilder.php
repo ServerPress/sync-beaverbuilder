@@ -338,6 +338,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
 
 			echo '<div style="display:none">';
 			// translatable messages
+			echo '<span id="sync-msg-save-first">', __('Please save content before Pushing to Target.', 'wpsitesync-beaverbuilder'), '</span>';
 			echo '<span id="sync-msg-starting-push">', __('Pushing Content to Target site...', 'wpsitesync-beaverbuilder'), '</span>';
 			echo '<span id="sync-msg-success">', __('Content successfully Pushed to Target site.', 'wpsitesync-beaverbuilder'), '</span>';
 			echo '<span id="sync-msg-starting-pull">', __('Pulling Content from Target site...', 'wpsitesync-beaverbuilder'), '</span>';

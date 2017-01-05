@@ -26,6 +26,13 @@ margin-top: -3px;
     padding-left: 3px;
 }
 
+.sync-button-disable {
+	background-color: #f7f7f7;
+	border: none;
+	color: #555 !important;
+	cursor: not-allowed;
+}
+
 #sync-beaverbuilder-msg {
 	background-color: white;
 	position: absolute;
