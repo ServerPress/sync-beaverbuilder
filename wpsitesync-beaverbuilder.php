@@ -136,6 +136,7 @@ SyncDebug::log(__METHOD__.'() no license');
 		 */
 		private function _show_notice($msg, $class = 'notice-success', $dismissable = FALSE)
 		{
+			// TODO: refactor to use Sync Core function
 			echo '<div class="notice ', $class, ' ', ($dismissable ? 'is-dismissible' : ''), '">';
 			echo	'<p>', $msg, '</p>';
 			echo '</div>';
@@ -149,7 +150,10 @@ SyncDebug::log(__METHOD__.'() no license');
 		 */
 		public function handle_push($target_post_id, $post_data, $response)
 		{
+			// TODO: refactor into a SyncBeaverBuilderPushProcess class
 SyncDebug::log(__METHOD__."({$target_post_id})");
+
+			// check POST contents to make sure we have something to work with
 			$input = new SyncInput();
 			$post_meta = $input->post_raw('post_meta', array());
 			foreach ($post_meta as $meta_key => $meta_value) {
@@ -214,6 +218,7 @@ SyncDebug::log(__METHOD__.'() found action: ' . $operation);
 		 */
 		public function filter_push_content($data, $apirequest)
 		{
+			// TODO: this needs to be refactored into a SyncBeaverBuilderPushContent class
 SyncDebug::log(__METHOD__.'()'); //  data=' . var_export($data, TRUE)); // . var_export($data, TRUE));
 			// look for media references and call SyncApiRequest->send_media() to add media to the Push operation
 			if (isset($data['post_meta'])) {
@@ -223,6 +228,7 @@ SyncDebug::log(__METHOD__.'()'); //  data=' . var_export($data, TRUE)); // . var
 				else if (isset($data['post_data']['ID']))			// present on Pull operations
 					$post_id = abs($data['post_data']['ID']);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post id=' . $post_id);
+
 				$regex_search = "/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/";
 				$attach_model = new SyncAttachModel();
 
@@ -252,7 +258,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found urls: ' . var_export($urls,
 //									if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
 									if ($site_url === substr($url, 0, strlen($site_url)) && FALSE !== strpos($url, $upload_url)) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' syncing image: ' . $url);
-										$attach_posts = $attach_model->search_by_guid($url);
+										$attach_posts = $attach_model->search_by_guid($url, TRUE);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' res=' . var_export($attach_posts, TRUE));
 										// ignore any images that are not found in the Image Library
 										if (0 === count($attach_posts)) {
@@ -268,9 +274,14 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking guid "' . $attach_post->
 												$attach_id = $attach_post->ID;
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found matching for id#' . $attach_id);
 												break;
+											} else if (isset($attach_post->orig_guid)) { // && $url === $attach_post->orig_guid) {
+												// set the URL to what was found by the search_by_guid() extended search
+												$url = $attach_post->guid;
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' resetting url to ' . $url);
 											}
 										}
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
+										// TODO: ensure images found via extended search are not causing duplicate uploads
 										$apirequest->send_media($url, $post_id, 0, $attach_id);
 									}
 								}
@@ -357,10 +368,9 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
 		 */
 		public function allow_custom_post_types($post_types)
 		{
-			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME))
-				return $post_types;
-
-			$post_types[] = 'fl-builder-template';
+			if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+				$post_types[] = 'fl-builder-template';
+			}
 
 			return $post_types;
 		}
