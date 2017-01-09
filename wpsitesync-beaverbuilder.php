@@ -169,8 +169,9 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' stripped: ' . var_export($meta_da
 
 						// fixup domains
 						$controller = SyncApiController::get_instance();
-						$source_url = $controller->source;
-						$target_url = site_url();
+						$source_url = untrailingslashit($controller->source);
+						$target_url = untrailingslashit(site_url());
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing domains: ' . $source_url . ' -> ' . $target_url);
 						$meta_data = str_replace($source_url, $target_url, $meta_data);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix domain from "' . $source_url . '" to "' . $target_url . '": ' . var_export($meta_data, TRUE));
 
