@@ -271,14 +271,19 @@ SyncDebug::log(' - no attachments found with this name, skipping');
 										$attach_id = 0;
 										foreach ($attach_posts as $attach_post) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking guid "' . $attach_post->guid . '"');
+SyncDebug::log(__METHOD__.'() - ID #' . $attach_post->ID);
+SyncDebug::log(__METHOD__.'() - url="' . $url . '"');
+SyncDebug::log(__METHOD__.'() - attach guid="' . $attach_post->guid . '"');
+SyncDebug::log(__METHOD__.'() - orig guid="' . (isset($attach_post->orig_guid) ? $attach_post->orig_guid : 'NULL') . '"');
 											if ($attach_post->guid === $url) {
 												$attach_id = $attach_post->ID;
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found matching for id#' . $attach_id);
 												break;
 											} else if (isset($attach_post->orig_guid)) { // && $url === $attach_post->orig_guid) {
 												// set the URL to what was found by the search_by_guid() extended search
+												$attach_id = $attach_post->ID;
 												$url = $attach_post->guid;
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' resetting url to ' . $url);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' resetting #' . $attach_id . ' url to ' . $url);
 											}
 										}
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
@@ -286,6 +291,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' attach id=' . $attach_id);
 										$apirequest->send_media($url, $post_id, 0, $attach_id);
 									}
 								}
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing images');
 							}
 						}
 					}

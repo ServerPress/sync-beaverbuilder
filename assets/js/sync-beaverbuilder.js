@@ -98,9 +98,12 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
 					}
 				}
 			} else {
-				if ('undefined' !== typeof(response.error_message))
-					wpsitesync_beaverbuilder.set_message(response.error_message, false, true);
-				else if ('undefined' !== typeof(response.data.message))
+				if ('undefined' !== typeof(response.error_message)) {
+					var msg = '';
+					if ('undefined' !== typeof(response.error_data))
+						msg += ' - ' + response.error_data;
+					wpsitesync_beaverbuilder.set_message(response.error_message + msg, false, true);
+				} else if ('undefined' !== typeof(response.data.message))
 //					jQuery('#sync-message').text(response.data.message);
 					wpsitesync_beaverbuilder.set_message(response.data.message, false, true);
 			}
