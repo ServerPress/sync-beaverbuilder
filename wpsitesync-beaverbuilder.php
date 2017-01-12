@@ -2,10 +2,10 @@
 /*
 Plugin Name: WPSiteSync for Beaver Builder
 Plugin URI: http://wpsitesync.com
-Description: Allow custom post types to be Synced to the Target site
+Description: Allow Beaver Builder Content and Templates to be Synced to the Target site
 Author: WPSiteSync
 Author URI: http://wpsitesync.com
-Version: 1.0
+Version: 1.0 Beta
 Text Domain: wpsitesync-beaverbuilder
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
@@ -25,7 +25,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
 		const PLUGIN_VERSION = '1.0';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
-		const REQUIRED_VERSION = '1.3';									// minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.3.1';									// minimum version of WPSiteSync required for this add-on to initialize
 
 		private function __construct()
 		{
