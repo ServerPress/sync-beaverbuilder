@@ -104,7 +104,6 @@ SyncDebug::log(__METHOD__.'() no license');
 			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('activate_plugins')) {
 				if (is_admin())
 					add_action('admin_notices', array($this, 'notice_requires_wpss'));
-				return;
 			}
 		}
 
@@ -136,7 +135,6 @@ SyncDebug::log(__METHOD__.'() no license');
 		 */
 		private function _show_notice($msg, $class = 'notice-success', $dismissable = FALSE)
 		{
-			// TODO: refactor to use Sync Core function
 			echo '<div class="notice ', $class, ' ', ($dismissable ? 'is-dismissible' : ''), '">';
 			echo	'<p>', $msg, '</p>';
 			echo '</div>';
