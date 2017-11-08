@@ -175,6 +175,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix domain from "' . $source_url 
 
 						// fixup serialization
 						$this->_load_class('beaverbuilderserialize');
+						// TODO: move instantiation outside of loop
 						$ser = new SyncBeaverBuilderSerialize();
 						$meta_data = $ser->fix_serialized_data($meta_data);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix serialization: ' . var_export($meta_data, TRUE));
@@ -369,12 +370,13 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing images');
 		/**
 		 * Adds all custom post types to the list of `spectrom_sync_allowed_post_types`
 		 * @param  array $post_types The post types to allow
-		 * @return array
+		 * @return array The allowed post types, with the bb types added
 		 */
 		public function allow_custom_post_types($post_types)
 		{
 			if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
-				$post_types[] = 'fl-builder-template';
+				$post_types[] = 'fl-builder-template';				// bb templates
+				$post_types[] = 'fl-theme-layout';					// bb themes #14
 			}
 
 			return $post_types;
@@ -401,7 +403,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done processing images');
 		 * @return array The modified data with Beaver Builder specific information added
 		 */
 		// TODO: not needed
-		public function add_bb_data($data, $action, $request_args)
+/*		public function add_bb_data($data, $action, $request_args)
 		{
 SyncDebug::log(__METHOD__.'() action=' . $action);
 			if ('push' !== $action && 'pull' !== $action)
@@ -411,12 +413,13 @@ if (!isset($data['post_data']))
 else if (!isset($data['post_data']['post_type']))
 	SyncDebug::log(__METHOD__.'() no post_type element found in ' . var_export($data['post_data'], TRUE));
 
+			// TODO: do we need to check for allowed post types or just post/page?
 			if (!in_array($data['post_data']['post_type'], array('post', 'page'))) {
 				// TODO: collect CPT taxonomy data and add to array
 			}
 			// TODO: add custom taxonomy information
 			return $data;
-		}
+		} */
 
 		/**
 		 * Add the Beaver Builder add-on to the list of known WPSiteSync extensions
