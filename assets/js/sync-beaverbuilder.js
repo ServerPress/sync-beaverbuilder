@@ -28,7 +28,13 @@ console.log('bb-init()');
 	var html = jQuery('#sync-beaverbuilder-ui').html();
 console.log('html=' + html);
 //	jQuery('.fl-builder-templates-button').after(html);
-	jQuery('.fl-builder-add-content-button').after(html);
+	if (0 !== jQuery('.fl-builder--saving-indicator').length) {
+		// v2.0.3.2+
+		jQuery('.fl-builder--saving-indicator').after(html);
+	} else {
+		// v1.9-2.0
+		jQuery('.fl-builder-add-content-button').after(html);
+	}
 
 	this.$push_button = jQuery('#sync-bb-push');
 
