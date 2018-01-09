@@ -156,7 +156,7 @@ SyncDebug::log(__METHOD__."({$target_post_id})");
 			$post_meta = $input->post_raw('post_meta', array());
 			foreach ($post_meta as $meta_key => $meta_value) {
 				if ('_fl_builder_' === substr($meta_key, 0, 12)) {
-SyncDebug::log(__METHOD__.'() found BeaverBuilder meta: ' . $meta_key . '=' . var_export($meta_value, TRUE));
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found BeaverBuilder meta: ' . $meta_key . '=' . var_export($meta_value, TRUE));
 					if (is_array($meta_value)) {
 						// only bother with serialization fixup if it's an array
 						$meta_data = $meta_value[0];
@@ -164,6 +164,8 @@ SyncDebug::log(__METHOD__.'() found BeaverBuilder meta: ' . $meta_key . '=' . va
 						// unslash
 						$meta_data = stripslashes($meta_data);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' stripped: ' . var_export($meta_data, TRUE));
+						if ('_fl_builder_draft' === $meta_key)			// this is double serialized #15
+							$meta_data = unserialize($meta_data);
 
 						// fixup domains
 						$controller = SyncApiController::get_instance();
@@ -180,6 +182,9 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix domain from "' . $source_url 
 						$meta_data = $ser->fix_serialized_data($meta_data);
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fix serialization: ' . var_export($meta_data, TRUE));
 
+						if ('_fl_builder_draft' === $meta_key)			// this need re-serializing #15
+							$meta_data = serialize($meta_data);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data ready for insertion: ' . var_export($meta_data, TRUE));
 						// convert to an object
 						$meta_object = maybe_unserialize($meta_data);
 
