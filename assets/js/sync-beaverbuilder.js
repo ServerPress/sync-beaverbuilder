@@ -65,7 +65,7 @@ console.log('disable_sync() - turning off the button');
  */
 WPSiteSyncContent_BeaverBuilder.enable_sync = function()
 {
-console.log('disable_sync() - turning on the button');
+console.log('enable_sync() - turning on the button');
 	WPSiteSyncContent_BeaverBuilder.content_dirty = false;
 	jQuery('#sync-bb-push').removeClass('sync-button-disable');
 	jQuery('#sync-bb-pull').removeClass('sync-button-disable');
