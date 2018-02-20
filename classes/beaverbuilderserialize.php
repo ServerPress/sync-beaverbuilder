@@ -1,5 +1,7 @@
 <?php
 
+//TODO: @deprecated
+
 class SyncBeaverBuilderSerialize
 {
 	public function fix_serialized_data($data)
