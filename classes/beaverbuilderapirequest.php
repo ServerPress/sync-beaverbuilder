@@ -326,6 +326,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing attachment id "' . $prop .
 								} // == '_src'
 							} // foreach
 						}
+						// give add-ons a chance to update custom module data
+						do_action('spectrom_sync_beaverbuilder_serialized_data_update', $object, $source_post_id);
 					} // isset($object->settings)
 
 					// look for video references

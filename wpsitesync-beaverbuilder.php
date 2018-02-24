@@ -10,7 +10,7 @@ Text Domain: wpsitesync-beaverbuilder
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
 images, manuals, cascading stylesheets and included JavaScript are NOT GPL.
- */
+*/
 
 if (!class_exists('WPSiteSync_BeaverBuilder')) {
 	/*
@@ -491,6 +491,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 											}
 										}
 									}
+									// give add-ons a chance to look up any custom references
+									do_action('spectrom_sync_beaverbuilder_serialized_data_reference', $object, $post_id, $this->_api_request);
 								}
 							} // isset($object->settings)
 							// look for video references
