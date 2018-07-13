@@ -532,7 +532,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 		 */
 		public function filter_allowed_mime_types($allowed, $type)
 		{
-			if (in_array($type['ext'], array('avi', 'flv', 'wmv', 'mp4', 'mov')))
+			// add audio types #7
+			if (in_array($type['ext'], array('ai', 'avi', 'flv', 'midi', 'wmv', 'mp4', 'mp3', 'mov', 'wav', 'wma')))
 				$allowed = TRUE;
 			return $allowed;
 		}
