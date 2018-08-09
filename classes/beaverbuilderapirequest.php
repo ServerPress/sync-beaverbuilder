@@ -315,8 +315,9 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing attachment id "' . $prop
 												$object->settings->$prop = strval(abs($sync_data->target_content_id));
 										} */
 										$target_image_id = $this->_get_target_id($source_image_id);
+										// TODO: if source === target, don't do an update
 										if (0 !== $target_image_id) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing attachment id "' . $prop . '" sorce=' . $source_image_id . ' target=' . $target_image_id);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing attachment id "' . $prop . '" source=' . $source_image_id . ' target=' . $target_image_id);
 											if (is_int($object->settings->$prop))
 												$object->settings->$prop = $target_image_id;
 											else
