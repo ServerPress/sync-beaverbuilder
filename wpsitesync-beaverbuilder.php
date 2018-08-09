@@ -78,7 +78,7 @@ SyncDebug::log(__METHOD__ . '() no license');
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 			// use the 'spectrom_sync_api_request' filter to add any necessary taxonomy information
 //			add_filter('spectrom_sync_api_request', array($this, 'add_bb_data'), 10, 3);
-//			add_filter('spectrom_sync_tax_list', array($this, 'filter_taxonomies'), 10, 1);
+			add_filter('spectrom_sync_tax_list', array($this, 'filter_taxonomies'), 10, 1);
 			// load scripts and content on front end requests
 			if (isset($_GET['fl_builder']) && SyncOptions::is_auth()) {
 				add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -621,11 +621,19 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 		 * @param array $tax Array of taxonomy information to filter
 		 * @return array The taxonomy list, with all taxonomies added to it
 		 */
-		// TODO: may not be needed
 		public function filter_taxonomies($tax)
 		{
 			$all_tax = get_taxonomies(array(), 'objects');
-			$tax = array_merge($tax, $all_tax);
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' taxonomies: ' . var_export($all_tax, TRUE));
+//fl-builder-template-category
+//fl-builder-template-type
+			// only add the taxonomies created by BB #20
+			$bb_tax = array();
+			foreach ($all_tax as $tax_name => $tax_info) {
+				if ('fl-builder-' === substr($tax_name, 0, 11))
+					$bb_tax[$tax_name] = $tax_info;
+			}
+			$tax = array_merge($tax, $bb_tax);
 			return $tax;
 		}
 
