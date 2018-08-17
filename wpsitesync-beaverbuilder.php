@@ -247,6 +247,12 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing attachment id "' . $prop
 												}
 											} // == '_src'
 										} // foreach
+
+										// handle slideshow photo references
+										if (isset($obj_vars['type']) && 'slideshow' === $obj_vars['type']) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "slideshow" module');
+											$photos = $obj_vars['photos'];
+										}
 									}
 								} // isset($object->settings)
 
@@ -491,10 +497,28 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 											}
 										}
 									}
+
+									// handle slideshow photo references #22
+									if (isset($obj_vars['type']) && 'slideshow' === $obj_vars['type']) {
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found "slideshow" module: ' . var_export($obj_vars['photo_data'], TRUE));
+										$photos = $obj_vars['photos'];
+										foreach ($photos as $photo_img) {
+											$img_id = abs($photo_img);
+											$img_src = wp_get_attachment_image_src($img_id, 'full');
+											if (FALSE !== $img_src) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending media #' . $img_id . ': ' . var_export($img_src, TRUE));
+												$this->_send_media_instance($img_id, $img_src[0], $data);
+											}
+										}
+									}
+
 									// give add-ons a chance to look up any custom references
 									do_action('spectrom_sync_beaverbuilder_serialized_data_reference', $object, $post_id, $this->_api_request);
+								} else {
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj_vars=NULL');
 								}
 							} // isset($object->settings)
+
 							// look for video references
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
 							if (!empty($object->settings->bg_video) && isset($object->settings->bg_video_data) &&

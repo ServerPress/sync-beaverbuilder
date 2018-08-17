@@ -52,7 +52,7 @@ console.log('html=' + html);
 /**
  * Disables the Sync Push and Pull buttons after Content is edited
  */
-WPSiteSyncContent_BeaverBuilder.disable_sync = function()
+WPSiteSyncContent_BeaverBuilder.prototype.disable_sync = function()
 {
 console.log('disable_sync() - turning off the button');
 	WPSiteSyncContent_BeaverBuilder.content_dirty = true;
@@ -63,7 +63,7 @@ console.log('disable_sync() - turning off the button');
 /**
  * Enable the Sync Push and Pull buttons after Content changes are abandoned
  */
-WPSiteSyncContent_BeaverBuilder.enable_sync = function()
+WPSiteSyncContent_BeaverBuilder.prototype.enable_sync = function()
 {
 console.log('enable_sync() - turning on the button');
 	WPSiteSyncContent_BeaverBuilder.content_dirty = false;

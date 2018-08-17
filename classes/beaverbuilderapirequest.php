@@ -326,6 +326,20 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing attachment id "' . $prop .
 									}
 								} // == '_src'
 							} // foreach
+
+							// handle slideshow photo references #22
+							if (isset($obj_vars['type']) && 'slideshow' === $obj_vars['type']) {
+								$photos = $obj_vars['photos'];
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "slideshow" module: ' . var_export($photos, TRUE));
+								$fixed_photos = array();
+								foreach ($photos as $photo_img) {
+									$source_image_id = abs($photo_img);
+									$target_image_id = $this->_get_target_id($source_image_id);
+									$fixed_photos[] = $target_image_id;
+								}
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed photo list: ' . var_export($fixed_photos, TRUE));
+								$object->settings->photos = $fixed_photos;
+							}
 						}
 						// give add-ons a chance to update custom module data
 						do_action('spectrom_sync_beaverbuilder_serialized_data_update', $object, $source_post_id);
@@ -347,7 +361,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found target id: ' . $sync_data
 					}
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done checking videos references');
 
-					// TOSO: any more id references?
+					// TODO: any more id references?
 
 				} // foreach()
 
