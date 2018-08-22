@@ -333,12 +333,26 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing attachment id "' . $prop .
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "slideshow" module: ' . var_export($photos, TRUE));
 								$fixed_photos = array();
 								foreach ($photos as $photo_img) {
-									$source_image_id = abs($photo_img);
-									$target_image_id = $this->_get_target_id($source_image_id);
-									$fixed_photos[] = $target_image_id;
+									$source_image_id = abs($photo_img);								// source site's image id
+									$target_image_id = $this->_get_target_id($source_image_id);		// target site's image id
+									$fixed_photos[] = $target_image_id;								// add photo's id to the fixed photo list
 								}
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed photo list: ' . var_export($fixed_photos, TRUE));
-								$object->settings->photos = $fixed_photos;
+								$object->settings->photos = $fixed_photos;							// update photo information with fixed photo list
+							}
+							// handle gallery photo references #21
+							if (isset($obj_vars['type']) && 'gallery' === $obj_vars['type']) {
+								$photos = $obj_vars['photo_data'];
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "gallery" module: ' . var_export($photos, TRUE));
+								$fixed_photos = array();
+								foreach ($photos as $photo_img => $photo_data) {
+									$source_image_id = abs($photo_data->id);						// source site's image id
+									$target_image_id = $this->_get_target_id($source_image_id);		// target site's image id
+									$photo_data->id = $target_image_id;								// update the data structure
+									$fixed_photos[$target_image_id] = $photo_data;					// add data to fixed photo list
+								}
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed gallery list: ' . var_export($fixed_photos, TRUE));
+								$object->settings->photo_data = $fixed_photos;						// update gallery information with fixed photo list
 							}
 						}
 						// give add-ons a chance to update custom module data
