@@ -11,9 +11,9 @@ console.log('sync-beaverbuilder-settings.js');
 
 function WPSiteSyncContent_BeaverBuilderSettings()
 {
-	this.inited = false;
+	this.inited = false;			// set to true after initialization
 	this.$content = null;
-	this.disable = false;
+	this.disabled = false;			// set to true when Push/Pull buttons are disabled
 }
 
 /**
@@ -27,7 +27,19 @@ console.log('html=' + html);
 //	jQuery('.fl-builder-templates-button').after(html);
 	jQuery('.fl-settings-heading').append(html);
 
+	jQuery('form input').on('change', wpsitesynccontent.beaverbuilder.disable_buttons);
+	jQuery('form select').on('change', wpsitesynccontent.beaverbuilder.disable_buttons);
 	this.inited = true;
+};
+
+WPSiteSyncContent_BeaverBuilderSettings.prototype.disable_buttons = function()
+{
+	if (!this.disabled) {
+		jQuery('.sync-button').attr('disabled', 'disabled');
+//		jQuery('#sync-save-msg').show().css('display', 'block');
+		wpsitesynccontent.set_message(jQuery('#sync-message-save-settings').text(), false, true);
+		this.disabled = true;
+	}
 };
 
 WPSiteSyncContent_BeaverBuilderSettings.prototype.push_settings = function()

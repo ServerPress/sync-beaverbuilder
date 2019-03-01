@@ -41,7 +41,7 @@ class SyncBeaverBuilderApiRequest extends SyncInput
 	 * @param int $code The error code being evaluated
 	 * @return string The modified $message string, with Beaver Builder specific errors added to it
 	 */
-	public function filter_error_codes($message, $code)
+	public function filter_error_codes($message, $code, $data)
 	{
 		switch ($code) {
 		case self::ERROR_SETTINGS_DATA_NOT_FOUND:	$message = __('No settings data contained in API request.', 'wpsitesync-beaverbuilder'); break;

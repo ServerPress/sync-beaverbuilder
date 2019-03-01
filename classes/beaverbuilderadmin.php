@@ -78,6 +78,7 @@ class SyncBeaverBuilderAdmin
 		echo	'<span id="sync-message-pull-settings">', __('Pulling Settings from Target...', 'wpsitesync-beaverbuilder'), '</span>';
 		echo	'<span id="sync-message-pull-success">', __('Settings successfully Pulled from Target.', 'wpsitesync-beaverbuilder'), '</span>';
 		echo	'<span id="sync-message-pull-disabled">', __('Please install and activate the WPSiteSync for Pull add-on to have Pull capability.', 'wpsitesync-beaverbuilder'), '</span>';
+		echo	'<span id="sync-message-save-settings">', __('Please Save settings before Pushing or Pulling from Target.', 'wpsitesync-beaverbuilder'), '</span>';
 		echo '</div>';
 		echo '</div>';
 
