@@ -53,6 +53,20 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		}
 
 		/**
+		 * Filters settings field data for the strict mode configuration setting
+		 * @param array $args The arguments to be sent to rendering method
+		 * @return array Modified arguments, with message about Beaver Builder included
+		 */
+		public function filter_setting_strict($args)
+		{
+			if (empty($args['description']))
+				$args['description'] = '';
+			$args['description'] .= (!empty($args['description']) ? '<br/>' : '' ) .
+				__('With WPSiteSync for Beaver Builder installed, version checking for Beaver Builder is also performed when Pushing Beaver Builder Content.', 'wpsitesync-beaverbuilder');
+			return $args;
+		}
+
+		/**
 		 * Callback for the 'spectrom_sync_init' action. Used to initialize this plugin knowing the WPSiteSync exists
 		 */
 		public function init()
@@ -63,6 +77,8 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 SyncDebug::log(__METHOD__ . '() no license');
 				return;
 			}
+
+			add_filter('spectrom_sync_setting-strict', array($this, 'filter_setting_strict'));
 
 			// check for minimum WPSiteSync version
 			if (is_admin() && version_compare(WPSiteSyncContent::PLUGIN_VERSION, self::REQUIRED_VERSION) < 0 && current_user_can('activate_plugins')) {
@@ -98,7 +114,7 @@ SyncDebug::log(__METHOD__ . '() no license');
 			add_filter('spectrom_sync_api', array($api, 'api_controller_request'), 10, 3); // called by SyncApiController
 			add_action('spectrom_sync_api_request_response', array($api, 'api_response'), 10, 3); // called by SyncApiRequest->api()
 
-			add_filter('spectrom_sync_error_code_to_text', array($api, 'filter_error_codes'), 10, 2);
+			add_filter('spectrom_sync_error_code_to_text', array($api, 'filter_error_codes'), 10, 3);
 			add_filter('spectrom_sync_notice_code_to_text', array($api, 'filter_notice_codes'), 10, 2);
 		}
 
