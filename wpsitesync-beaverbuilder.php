@@ -24,7 +24,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
 		const PLUGIN_VERSION = '1.0';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
-		const REQUIRED_VERSION = '1.3.3';		 // minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.5.1';		 // minimum version of WPSiteSync required for this add-on to initialize
 
 		const DATA_IMAGE_REFS = 'bb_image_refs';	// TODO: remove
 
@@ -525,6 +525,22 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found "slideshow" module: ' . v
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending media #' . $img_id . ': ' . var_export($img_src, TRUE));
 												$this->_send_media_instance($img_id, $img_src[0], $data);
 											}
+										}
+									}
+
+									// handle video references #31
+									if (isset($obj_vars['type']) && 'video' === $obj_vars['type']) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found a video object');
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
+										if (isset($obj_vars['video_type']) && 'media_library' === $obj_vars['video_type']) {
+											$video_id = abs($obj_vars['video']);
+											$video_src = $obj_vars['data']->url;
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video src=' . var_export($video_src, TRUE));
+											if (FALSE !== $video_src && !empty($video_src)) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending video #' . $video_id . ': ' . var_export($video_src, TRUE));
+												$this->_send_media_instance($video_id, $video_src[0], $data);
+											}
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data=' . var_export($data, TRUE));
 										}
 									}
 
