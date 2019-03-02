@@ -340,6 +340,18 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "slideshow" module: ' . var
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed photo list: ' . var_export($fixed_photos, TRUE));
 								$object->settings->photos = $fixed_photos;							// update photo information with fixed photo list
 							}
+
+							// handle video reference #31
+							if (isset($obj_vars['type']) && 'video' === $obj_vars['type']) {
+								$video = abs($obj_vars['video']);
+								$source_video_id = abs($obj_vars['video']);							// source site's media id
+								$target_video_id = $this->_get_target_id($source_video_id);			// target site's media id
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video object before:' . var_export($object->settings, TRUE));
+								$object->settings->video = $target_video_id;
+								$object->settings->data->id = $target_video_id;
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video object after:' . var_export($object->settings, TRUE));
+							}
+
 							// handle gallery photo references #21
 							if (isset($obj_vars['type']) && 'gallery' === $obj_vars['type']) {
 								$photos = $obj_vars['photo_data'];
