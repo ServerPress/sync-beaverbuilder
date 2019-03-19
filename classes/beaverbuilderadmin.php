@@ -51,7 +51,7 @@ class SyncBeaverBuilderAdmin
 
 		echo '<div id="spectrom_sync">';
 
-		echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('/imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content">';
+		echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content">';
 
 		echo '<button id="sync-bb-push-settings" class="button button-primary sync-button" onclick="wpsitesynccontent.beaverbuilder.push_settings(); return false;">';
 		echo '<span class="sync-button-icon dashicons dashicons-migrate"></span>';

@@ -599,10 +599,10 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 		 */
 		public function enqueue_scripts()
 		{
-			wp_register_script('sync-beaverbuilder', plugin_dir_url(__FILE__) . '/assets/js/sync-beaverbuilder.js', array('jquery'), self::PLUGIN_VERSION, TRUE);
+			wp_register_script('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/js/sync-beaverbuilder.js', array('jquery'), self::PLUGIN_VERSION, TRUE);
 			wp_enqueue_script('sync-beaverbuilder');
 
-			wp_register_style('sync-beaverbuilder', plugin_dir_url(__FILE__) . '/assets/css/sync-beaverbuilder.css', array(), self::PLUGIN_VERSION);
+			wp_register_style('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/css/sync-beaverbuilder.css', array(), self::PLUGIN_VERSION);
 			wp_enqueue_style('sync-beaverbuilder');
 		}
 
@@ -631,7 +631,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 			echo '<span class="sync-button-icon dashicons dashicons-migrate"></span> ';
 			echo __('Push to Target', 'wpsitesync-beaverbuilder'), '</span>';
 
-			echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('/imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content">';
+			echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content" >';
+			echo '<br/><span id="sync-target-info">', sprintf(__('Target site: %1$s', 'wpsitesync-beaverbuilder'), SyncOptions::get('host')), ' </span>';
 
 //			echo '<button id="sync-bb-push" class="fl-builder-button fl-builder-button-primary">', __('Push', 'wpsitesync-beaverbuilder'), '</button>';
 //			echo '<button id="sync-bb-pull" class="fl-builder-button ', $class, '">', __('Pull', 'wpsitesync-beaverbuilder'), '</button>';
