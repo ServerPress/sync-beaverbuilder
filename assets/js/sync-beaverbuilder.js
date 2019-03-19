@@ -198,7 +198,7 @@ WPSiteSyncContent_BeaverBuilder.prototype.clear_message = function()
 WPSiteSyncContent_BeaverBuilder.prototype.push = function(post_id)
 {
 debug_out('.push(' + post_id + ')');
-	if (WPSiteSyncContent_BeaverBuilder.content_dirty) {
+	if (wpsitesync_beaverbuilder.content_dirty) {
 		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
 		return;
 	}
@@ -214,7 +214,7 @@ debug_out('.push(' + post_id + ')');
 WPSiteSyncContent_BeaverBuilder.prototype.pull = function(post_id)
 {
 debug_out('.pull(' + post_id + ')');
-	if (WPSiteSyncContent_BeaverBuilder.content_dirty) {
+	if (wpsitesync_beaverbuilder.content_dirty) {
 		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
 		return;
 	}

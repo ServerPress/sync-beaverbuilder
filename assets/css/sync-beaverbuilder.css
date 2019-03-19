@@ -1,3 +1,7 @@
+#sync-logo {
+	margin-top: 3px;
+}
+
 #sync-separator {
 	border-right: 1px solid black;
 	width: 1px;
@@ -26,11 +30,13 @@ margin-top: -3px;
     padding-left: 3px;
 }
 
-.sync-button-disable {
-	background-color: #f7f7f7;
+#sync-bb-push .sync-button-disable,
+.fl-builder-button-primary.sync-button-disable,
+.fl-builder-button.sync-button-disable {
+	background-color: #f7f7f7 !important;
 	border: none;
 	color: #555 !important;
-	cursor: not-allowed;
+	cursor: not-allowed !important;
 }
 
 #sync-beaverbuilder-msg {
@@ -42,6 +48,11 @@ margin-top: -3px;
 	top: 3rem;
 border: 1px solid #4accf6;
 z-index: 1000;
+}
+
+#sync-target-info {
+	margin-top: .7rem;
+	margin-right: 1.5rem;
 }
 
 #sync-message-dismiss {
