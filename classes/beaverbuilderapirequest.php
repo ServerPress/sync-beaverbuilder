@@ -274,7 +274,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing domains: ' . implode(','
 				$meta_data = str_ireplace($this->_source_urls, $this->_target_urls, $meta_data);
 			} */
 
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' data ready for insertion: ' . var_export($meta_data, TRUE));
+//SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' data ready for work: ' . var_export($meta_data, TRUE));
 			// convert to an object so we can work with it
 $meta_object = maybe_unserialize($meta_data);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' unserialized data "' . $meta_entry->meta_key . '" = ' . var_export($meta_object, TRUE));
@@ -298,30 +298,34 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' class_vars: ' . var_export($cla
 								// typical properties include: 'hero_image', 'hero_subtitle_image',
 								// 'hero_video', 'animation' 'id', 'about_image_field' id fixup needs to occur
 								if ('_src' === substr($var, -4)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' object has a _src property');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' object has a _src property: ' . $var);
 									// found a property with a '_src' ending
 									$prop = substr($var, 0, (strlen($var) - 4));
 									if (isset($object->settings->$prop)) {
 										// there's a '{prop}' property and a '{prop}_src' property
 										$source_image_id = abs($object->settings->$prop);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' source image id=' . $source_image_id);
-/*										$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
+										if (0 !== $source_image_id) {
+/*											$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' get_sync_data(' . $source_image_id . ', "' . $controller->source_site_key . '", "media")=' . var_export($sync_data, TRUE));
-										if (NULL !== $sync_data) {
+											if (NULL !== $sync_data) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing attachment id "' . $prop . '" source=' . $source_image_id . ' target=' . $sync_data->target_content_id);
-											if (is_int($object->settings->$prop))
-												$object->settings->$prop = abs($sync_data->target_content_id);
-											else
-												$object->settings->$prop = strval(abs($sync_data->target_content_id));
-										} */
-										$target_image_id = $this->_get_target_id($source_image_id);
-										// TODO: if source === target, don't do an update
-										if (0 !== $target_image_id) {
+												if (is_int($object->settings->$prop))
+													$object->settings->$prop = abs($sync_data->target_content_id);
+												else
+													$object->settings->$prop = strval(abs($sync_data->target_content_id));
+											} */
+											$target_image_id = $this->_get_target_id($source_image_id);
+											// TODO: if source === target, don't do an update
+											if (0 !== $target_image_id) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixing attachment id "' . $prop . '" source=' . $source_image_id . ' target=' . $target_image_id);
-											if (is_int($object->settings->$prop))
-												$object->settings->$prop = $target_image_id;
-											else
-												$object->settings->$prop = strval($target_image_id);
+												if (is_int($object->settings->$prop))
+													$object->settings->$prop = $target_image_id;
+												else
+													$object->settings->$prop = strval($target_image_id);
+											}
+										} else {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' skipping empty _src property');
 										}
 									}
 								} // == '_src'
@@ -352,54 +356,72 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video object before:' . var_expor
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video object after:' . var_export($object->settings, TRUE));
 							}
 
-							// handle gallery photo references #21
+							// handle gallery photo references #21 #32
 							if (isset($obj_vars['type']) && 'gallery' === $obj_vars['type']) {
 								$photos = $obj_vars['photo_data'];
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "gallery" module: ' . var_export($photos, TRUE));
 								$fixed_photos = array();
+								$photo_ids = array();
 								foreach ($photos as $photo_img => $photo_data) {
 									$source_image_id = abs($photo_data->id);						// source site's image id
 									$target_image_id = $this->_get_target_id($source_image_id);		// target site's image id
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' source img id=' . $source_image_id . ' = target img id=' . $target_image_id);
 									$photo_data->id = $target_image_id;								// update the data structure
 									$fixed_photos[$target_image_id] = $photo_data;					// add data to fixed photo list
+									$photo_ids[] = $target_image_id;								// update new photos[] array image id
 								}
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed gallery list: ' . var_export($fixed_photos, TRUE));
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed gallery list: ' . var_export($fixed_photos, TRUE));
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' starting gallery object: ' . var_export($object, TRUE));
 								$object->settings->photo_data = $fixed_photos;						// update gallery information with fixed photo list
+								$object->settings->photos = $photo_ids;
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed gallery object: ' . var_export($object, TRUE));
+							} // 'gallery'
+						}
+
+						// look for video references
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
+						if (!empty($object->settings->bg_video) && isset($object->settings->bg_video_data) &&
+							!empty($object->settings->bg_video_data->id)) {
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found video id: ' . $object->settings->bg_video_data->id);
+							$source_image_id = abs($object->settings->bg_video_data->id);
+							$target_image_id = $this->_get_target_id($source_image_id);
+#							$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
+#							if (NULL !== $sync_data) {
+							if (0 !== $target_image_id) {
+#SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found target id: ' . $sync_data->target_content_id);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found target id: ' . $target_image_id);
+#								$object->settings->bg_video = strval($sync_data->target_content_id);
+								$object->settings->bg_video = strval($target_image_id);				// needs to be a string
+#								$object->settings->bg_video_data->id = abs($sync_data->target_content_id);
+								$object->settings->bg_video_data->id = $target_image_id;
+#								$object->settings->bg_video_data->editLink = str_replace('?post=' . $source_image_id . '&', '?post=' . $sync_data->target_content_id . '&', $object->settings->bg_video_data->editLink);
+								$object->settings->bg_video_data->editLink = str_replace('?post=' . $source_image_id . '&', '?post=' . $target_image_id . '&', $object->settings->bg_video_data->editLink);
 							}
 						}
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done checking video references');
+
 						// give add-ons a chance to update custom module data
 						do_action('spectrom_sync_beaverbuilder_serialized_data_update', $object, $source_post_id);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' completed work on object: ' . var_export($object, TRUE));
 					} // isset($object->settings)
-
-					// look for video references
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
-					if (!empty($object->settings->bg_video) && isset($object->settings->bg_video_data) &&
-						!empty($object->settings->bg_video_data->id)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found video id: ' . $object->settings->bg_video_data->id);
-						$source_image_id = abs($object->settings->bg_video_data->id);
-						$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
-						if (NULL !== $sync_data) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found target id: ' . $sync_data->target_content_id);
-							$object->settings->bg_video = strval($sync_data->target_content_id);
-							$object->settings->bg_video_data->id = abs($sync_data->target_content_id);
-							$object->settings->bg_video_data->editLink = str_replace('?post=' . $source_image_id . '&', '?post=' . $sync_data->target_content_id . '&', $object->settings->bg_video_data->editLink);
-						}
-					}
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done checking videos references');
 
 					// TODO: any more id references?
 
 				} // foreach()
 
 				// reserialize in preparation for database update
-				$meta_data = serialize($meta_object);
+				$new_meta_data = serialize($meta_object);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' writing meta data: ' . var_export($new_meta_data, TRUE));
 			} // '_fl_builder_data' || '_fl_builder_draft' meta data
 
-			// write the data back to the database
-			$sql = "UPDATE `{$wpdb->postmeta}`
-					SET `meta_value`=%s
-					WHERE `meta_id`=%d ";
-			$wpdb->query($wpdb->prepare($sql, $meta_data, $meta_entry->meta_id));
+			if ($new_meta_data !== $meta_data) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data has been updated, write to db');
+				// write the data back to the database
+				$sql = "UPDATE `{$wpdb->postmeta}`
+						SET `meta_value`=%s
+						WHERE `meta_id`=%d ";
+				$wpdb->query($wpdb->prepare($sql, $new_meta_data, $meta_entry->meta_id));
+			}
 		}
 		
 		return TRUE;

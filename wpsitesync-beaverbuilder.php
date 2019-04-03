@@ -544,6 +544,19 @@ else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data=' . var_export($data, T
 										}
 									}
 
+									// look for testimonials #41
+									if (isset($obj_vars['type']) && 'testimonials' === $obj_vars['type']) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found testimonial object');
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
+										// look for image references in the testimonials
+										foreach ($obj_vars['testimonials'] as $testi) {
+											$content = $testi->testimonial;
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' content=' . $content);
+											$apirequest->parse_media($post_id, $content);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' completed parse_media() call');
+										}
+									}
+
 									// give add-ons a chance to look up any custom references
 									do_action('spectrom_sync_beaverbuilder_serialized_data_reference', $object, $post_id, $this->_api_request);
 								} else {
