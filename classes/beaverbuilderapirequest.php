@@ -306,8 +306,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' object has a _src property: ' .
 										$source_image_id = abs($object->settings->$prop);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' source image id=' . $source_image_id);
 										if (0 !== $source_image_id) {
-/*											$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' get_sync_data(' . $source_image_id . ', "' . $controller->source_site_key . '", "media")=' . var_export($sync_data, TRUE));
+/*											$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' get_sync_data(' . $source_image_id . ', "' . $controller->source_site_key . '")=' . var_export($sync_data, TRUE));
 											if (NULL !== $sync_data) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing attachment id "' . $prop . '" source=' . $source_image_id . ' target=' . $sync_data->target_content_id);
 												if (is_int($object->settings->$prop))
@@ -385,7 +385,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found video id: ' . $object->settings->bg_video_data->id);
 							$source_image_id = abs($object->settings->bg_video_data->id);
 							$target_image_id = $this->_get_target_id($source_image_id);
-#							$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
+#							$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key);
 #							if (NULL !== $sync_data) {
 							if (0 !== $target_image_id) {
 #SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found target id: ' . $sync_data->target_content_id);
@@ -448,7 +448,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data has been updated, write to d
 		// look up each image and find it's Target ID
 		foreach ($images as $source_id => $img_ref) {
 			// use type 'post' because attachment post types are still stored in the wp_posts table
-			$sync_data = $this->_sync_model->get_sync_data($source_id, $this->_source_site_key, 'post');
+			$sync_data = $this->_sync_model->get_sync_data($source_id, $this->_source_site_key);
 			if (NULL !== $sync_data) {
 				$entry = new stdClass();
 				$entry->img_ref = $img_ref;
@@ -473,7 +473,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' image data=' . var_export($this->
 
 		// not found, we can look it up via the SyncModel
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' looking up source image id ' . $source_id);
-		$sync_data = $this->_sync_model->get_sync_data($source_id, $this->_source_site_key, 'post');
+		$sync_data = $this->_sync_model->get_sync_data($source_id, $this->_source_site_key);
 		if (NULL !== $sync_data) {
 			$entry = new stdClass();
 			// TODO: do we need the img_ref? Can do lookup post via image name
