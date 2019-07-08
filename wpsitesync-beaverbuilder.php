@@ -124,9 +124,22 @@ SyncDebug::log(__METHOD__ . '() no license');
 		public function wp_loaded()
 		{
 			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('activate_plugins')) {
-				if (is_admin())
-					add_action('admin_notices', array($this, 'notice_requires_wpss'));
+				add_action('admin_notices', array($this, 'notice_requires_wpss'));
 			}
+			if (!class_exists('FLBuilderLoader', FALSE) && current_user_can('activate_plugins')) {
+				add_action('admin_notices', array($this, 'notice_requires_bb'));
+			}
+		}
+
+		/**
+		 * Display admin notice to install/activate Beaver Builder
+		 */
+		public function notice_requires_bb()
+		{
+			$this->_show_notice(
+				sprintf(__('WPSiteSync for Beaver Builder requires the Beaver Builder plugin to be installed and activated. Please <a href="%1$s">click here</a> to activate.', 'wpsitesync-beaverbuilder'),
+					admin_url('plugins.php')),
+				'notice-warning');
 		}
 
 		/**
@@ -134,7 +147,10 @@ SyncDebug::log(__METHOD__ . '() no license');
 		 */
 		public function notice_requires_wpss()
 		{
-			$this->_show_notice(sprintf(__('WPSiteSync for Beaver Builder requires the main <em>WPSiteSync for Content</em> plugin to be installed and activated. Please <a href="%1$s">click here</a> to install or <a href="%2$s">click here</a> to activate.', 'wpsitesync-beaverbuilder'), admin_url('plugin-install.php?tab=search&s=wpsitesync'), admin_url('plugins.php')), 'notice-warning');
+			$this->_show_notice(
+				sprintf(__('WPSiteSync for Beaver Builder requires the main <em>WPSiteSync for Content</em> plugin to be installed and activated. Please <a href="%1$s">click here</a> to install or <a href="%2$s">click here</a> to activate.', 'wpsitesync-beaverbuilder'),
+					admin_url('plugin-install.php?tab=search&s=wpsitesync'), admin_url('plugins.php')),
+				'notice-warning');
 		}
 
 		/**
@@ -142,7 +158,10 @@ SyncDebug::log(__METHOD__ . '() no license');
 		 */
 		public function notice_minimum_version()
 		{
-			$this->_show_notice(sprintf(__('WPSiteSync for Beaver Builder requires version %1$s or greater of <em>WPSiteSync for Content</em> to be installed. Please <a href="2%s">click here</a> to update.', 'wpsitesync-beaverbuilder'), self::REQUIRED_VERSION, admin_url('plugins.php')), 'notice-warning');
+			$this->_show_notice(
+				sprintf(__('WPSiteSync for Beaver Builder requires version %1$s or greater of <em>WPSiteSync for Content</em> to be installed. Please <a href="2%s">click here</a> to update.', 'wpsitesync-beaverbuilder'),
+					self::REQUIRED_VERSION, admin_url('plugins.php')),
+				'notice-warning');
 		}
 
 		/**
@@ -251,8 +270,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' object has a _src property');
 													// there's a '{prop}' property and a '{prop}_src' property
 													$source_image_id = abs($object->settings->$prop);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' source image id=' . $source_image_id);
-													$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' get_sync_data(' . $source_image_id . ', "' . $controller->source_site_key . '", "media")=' . var_export($sync_data, TRUE));
+													$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key);
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' get_sync_data(' . $source_image_id . ', "' . $controller->source_site_key . '")=' . var_export($sync_data, TRUE));
 													if (NULL !== $sync_data) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing attachment id "' . $prop . '" source=' . $source_image_id . ' target=' . $sync_data->target_content_id);
 														if (is_int($object->settings->$prop))
@@ -278,7 +297,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
 									!empty($object->settings->bg_video_data->id)) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found video id: ' . $object->settings->bg_video_data->id);
 									$source_image_id = abs($object->settings->bg_video_data->id);
-									$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key, 'media');
+									$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key);
 									if (NULL !== $sync_data) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found target id: ' . $sync_data->target_content_id);
 										$object->settings->bg_video = strval($sync_data->target_content_id);
@@ -354,7 +373,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . " calling send_media('{$image_src
 
 			foreach ($image_refs as $img_id => $img_src) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found media #' . $img_id . ' - ' . $img_src);
-				$entry = $sync_model->get_sync_data($img_id, NULL, 'media');
+				$entry = $sync_model->get_sync_data($img_id);
 				if (NULL === $entry) {
 					// create the attachment entry in wp_posts
 					$guid = str_replace($source, $target, $img_src);
@@ -612,11 +631,17 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 		 */
 		public function enqueue_scripts()
 		{
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' registering "sync-beaverbuilder" script');
 			wp_register_script('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/js/sync-beaverbuilder.js', array('jquery'), self::PLUGIN_VERSION, TRUE);
-			wp_enqueue_script('sync-beaverbuilder');
+			if (isset($_GET['fl_builder'])) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' enqueueing "sync-beaverbuilder" script');
+				wp_enqueue_script('sync-beaverbuilder');
+			}
 
 			wp_register_style('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/css/sync-beaverbuilder.css', array(), self::PLUGIN_VERSION);
-			wp_enqueue_style('sync-beaverbuilder');
+			if (isset($_GET['fl_builder'])) {
+				wp_enqueue_style('sync-beaverbuilder');
+			}
 		}
 
 		/**
@@ -645,7 +670,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 			echo __('Push to Target', 'wpsitesync-beaverbuilder'), '</span>';
 
 			echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content" >';
-			echo '<br/><span id="sync-target-info">', sprintf(__('Target site: %1$s', 'wpsitesync-beaverbuilder'), SyncOptions::get('host')), ' </span>';
+			echo '<br/><span id="sync-target-info">', sprintf(__('Target site: <u>%1$s</u>', 'wpsitesync-beaverbuilder'), SyncOptions::get('host')), ' </span>';
 
 //			echo '<button id="sync-bb-push" class="fl-builder-button fl-builder-button-primary">', __('Push', 'wpsitesync-beaverbuilder'), '</button>';
 //			echo '<button id="sync-bb-pull" class="fl-builder-button ', $class, '">', __('Pull', 'wpsitesync-beaverbuilder'), '</button>';
