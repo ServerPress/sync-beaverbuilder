@@ -1,22 +1,22 @@
 /*
- * @copyright Copyright (C) 2015-2016 SpectrOMtech.com. - All Rights Reserved.
+ * @copyright Copyright (C) 2015-2019 WPSiteSync.com. - All Rights Reserved.
  * @license GNU General Public License, version 2 (http://www.gnu.org/licenses/gpl-2.0.html)
- * @author SpectrOMtech.com <hello@SpectrOMtech.com>
- * @url https://www.SpectrOMtech.com/products/
+ * @author WPSiteSync.com <hello@WPSiteSync.com>
+ * @url https://wpsitesync.com/downloads/wpsitesync-beaver-builder/
  * The PHP code portions are distributed under the GPL license. If not otherwise stated, all images, manuals, cascading style sheets, and included JavaScript *are NOT GPL, and are released under the SpectrOMtech Proprietary Use License v1.0
- * More info at https://SpectrOMtech.com/products/
+ * More info at https://WPSiteSync.com/downloads/
  */
 
 console.log('sync-beaverbuilder.js');
 
 function WPSiteSyncContent_BeaverBuilder()
 {
-	this.inited = false;
-	this.$content = null;
-	this.$push_button = null;
-	this.disable = false;
-	this.success_msg = '';
-	this.content_dirty = false;
+	this.inited = false;								// set to true after initialization
+//	this.$content = null;								// reference to content jQuery object
+	this.$push_button = null;							// reference to the WPSS Push buton
+	this.disable = false;								// true when WPSS push capability is disabled
+	this.success_msg = '';								// jQuery selector for Push vs. Pull success message
+	this.content_dirty = false;							// true when unsaved changes exist; otherwise false
 }
 
 /**
@@ -24,9 +24,9 @@ function WPSiteSyncContent_BeaverBuilder()
  */
 WPSiteSyncContent_BeaverBuilder.prototype.init = function()
 {
-debug_out('starting...');
+bb_debug_out('starting...');
 	var html = jQuery('#sync-beaverbuilder-ui').html();
-debug_out('html=' + html);
+bb_debug_out('html=' + html);
 //	jQuery('.fl-builder-templates-button').after(html);
 	if (0 !== jQuery('.fl-builder--saving-indicator').length) {
 		// v2.0.3.2+
@@ -49,23 +49,25 @@ debug_out('html=' + html);
 //this.set_message('this is a test', true, true);
 
 	// setup handlers to track Beaver Builder events and disable Push buttons when content changes
-	jQuery('body').on('fl-builder.didAddColumn', function() { debug_out('added column'); wpsitesync_beaverbuilder.disable_sync();  });
-	jQuery('body').on('fl-builder.didDeleteColumn', function() { debug_out('deleted column'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didDuplicateColumn', function() { debug_out('duplicated column'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didAddRow', function() { debug_out('added row'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didDeleteRow', function() { debug_out('deleted row'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didDuplicateRow', function() { debug_out('duplicated row'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didApplyTemplate', function() { debug_out('applied template'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didPublishLayout', function() { debug_out('publish layout'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.triggerDone', function() { debug_out('done'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.contentItemsChanged', function() { debug_out('content items changed'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didDeleteModule', function() { debug_out('deleted module'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didDuplicateModule', function() { debug_out('duplicated module'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didAddModule', function() { debug_out('added module'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.didSaveNodeSettings', function() { debug_out('save node settings'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didAddColumn', function() { bb_debug_out('added column'); wpsitesync_beaverbuilder.disable_sync();  });
+	jQuery('body').on('fl-builder.didDeleteColumn', function() { bb_debug_out('deleted column'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didDuplicateColumn', function() { bb_debug_out('duplicated column'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didAddRow', function() { bb_debug_out('added row'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didDeleteRow', function() { bb_debug_out('deleted row'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didDuplicateRow', function() { bb_debug_out('duplicated row'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didApplyTemplate', function() { bb_debug_out('applied template'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.triggerDone', function() { bb_debug_out('done'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.contentItemsChanged', function() { bb_debug_out('content items changed'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didDeleteModule', function() { bb_debug_out('deleted module'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didDuplicateModule', function() { bb_debug_out('duplicated module'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didAddModule', function() { bb_debug_out('added module'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.didSaveNodeSettings', function() { bb_debug_out('save node settings'); wpsitesync_beaverbuilder.disable_sync(); });
 
-	jQuery('body').on('fl-builder.click', function() { debug_out('settings click'); wpsitesync_beaverbuilder.disable_sync(); });
-	jQuery('body').on('fl-builder.change', function() { debug_out('settings change'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.click', function() { bb_debug_out('settings click'); wpsitesync_beaverbuilder.disable_sync(); });
+	jQuery('body').on('fl-builder.change', function() { bb_debug_out('settings change'); wpsitesync_beaverbuilder.disable_sync(); });
+
+	// on this event, Push buttons are enabled
+	jQuery('body').on('fl-builder.didPublishLayout', function() { bb_debug_out('publish layout'); wpsitesync_beaverbuilder.enable_sync(); });
 };
 
 /**
@@ -73,8 +75,8 @@ debug_out('html=' + html);
  */
 WPSiteSyncContent_BeaverBuilder.prototype.disable_sync = function()
 {
-debug_out('disable_sync() - turning off the button');
-	wpsitesync_beaverbuilder.content_dirty = true;
+bb_debug_out('disable_sync() - turning off the button');
+	this.content_dirty = true;
 	jQuery('#sync-bb-push').addClass('sync-button-disable');
 	jQuery('#sync-bb-pull').addClass('sync-button-disable');
 };
@@ -84,11 +86,17 @@ debug_out('disable_sync() - turning off the button');
  */
 WPSiteSyncContent_BeaverBuilder.prototype.enable_sync = function()
 {
-debug_out('enable_sync() - turning on the button');
-	WPSiteSyncContent_BeaverBuilder.content_dirty = false;
+bb_debug_out('enable_sync() - turning on the button');
+	this.content_dirty = false;
 	jQuery('#sync-bb-push').removeClass('sync-button-disable');
 	jQuery('#sync-bb-pull').removeClass('sync-button-disable');
 };
+
+WPSiteSyncContent_BeaverBuilder.prototype.is_content_dirty = function()
+{
+bb_debug_out('is_content_dirty() = ' + (this.content_dirty ? 'TRUE': 'FALSE'))
+	return this.content_dirty;
+}
 
 /**
  * Common method to perform API operations
@@ -111,7 +119,7 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
 		data: data,
 		url: ajaxurl,
 		success: function(response) {
-//debug_out('push() success response:', response);
+//bb_debug_out('push() success response:', response);
 			wpsitesync_beaverbuilder.clear_message();
 			if (response.success) {
 //				jQuery('#sync-message').text(jQuery('#sync-success-msg').text());
@@ -133,7 +141,7 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
 			}
 		},
 		error: function(response) {
-//debug_out('push() failure response:', response);
+//bb_debug_out('push() failure response:', response);
 			var msg = '';
 			if ('undefined' !== typeof(response.error_message))
 				wpsitesync_beaverbuilder.set_message('<span class="error">' + response.error_message + '</span>', false, true);
@@ -143,9 +151,9 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
 
 	// Allow other plugins to alter the ajax request
 	jQuery(document).trigger('sync_api_call', [operation, push_xhr]);
-//debug_out('push() calling jQuery.ajax');
+//bb_debug_out('push() calling jQuery.ajax');
 	jQuery.ajax(push_xhr);
-//debug_out('push() returned from ajax call');
+//bb_debug_out('push() returned from ajax call');
 };
 
 /**
@@ -156,9 +164,9 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
  */
 WPSiteSyncContent_BeaverBuilder.prototype.set_message = function(message, anim, clear)
 {
-debug_out('.set_message("' + message + '")');
+bb_debug_out('.set_message("' + message + '")');
 	var pos = this.$push_button.offset();
-debug_out(pos);
+bb_debug_out(pos);
 	jQuery('#sync-beaverbuilder-msg').css('left', (pos.left - 10) + 'px').css('top', (Math.min(pos.top, 7) + 30) + 'px');
 
 	jQuery('#sync-message').html(message);
@@ -179,7 +187,7 @@ debug_out(pos);
  */
 WPSiteSyncContent_BeaverBuilder.prototype.add_message = function(msg)
 {
-//debug_out('add_message() ' + msg);
+//bb_debug_out('add_message() ' + msg);
 	jQuery('#sync-beaverbuilder-msg').append('<br/>' + msg);
 };
 
@@ -197,8 +205,8 @@ WPSiteSyncContent_BeaverBuilder.prototype.clear_message = function()
  */
 WPSiteSyncContent_BeaverBuilder.prototype.push = function(post_id)
 {
-debug_out('.push(' + post_id + ')');
-	if (wpsitesync_beaverbuilder.content_dirty) {
+bb_debug_out('.push(' + post_id + ')');
+	if (this.is_content_dirty()) {
 		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
 		return;
 	}
@@ -213,8 +221,8 @@ debug_out('.push(' + post_id + ')');
  */
 WPSiteSyncContent_BeaverBuilder.prototype.pull = function(post_id)
 {
-debug_out('.pull(' + post_id + ')');
-	if (wpsitesync_beaverbuilder.content_dirty) {
+bb_debug_out('.pull(' + post_id + ')');
+	if (this.is_content_dirty()) {
 		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
 		return;
 	}
@@ -229,11 +237,11 @@ debug_out('.pull(' + post_id + ')');
  */
 WPSiteSyncContent_BeaverBuilder.prototype.pull_disabled = function(post_id)
 {
-debug_out('.pull_disabled(' + post_id + ')');
+bb_debug_out('.pull_disabled(' + post_id + ')');
 	this.set_message(jQuery('#sync-message-pull-disabled').html(), false, true);
 };
 
-function debug_out(msg, val)
+function bb_debug_out(msg, val)
 {
 //return;
 	if ('undefined' !== typeof(console.log)) {
@@ -243,11 +251,11 @@ function debug_out(msg, val)
 //console.log('this.caller');
 //console.log(this.caller);
 //console.log('callee');
-//console.log(debug_out.caller.toString());
+//console.log(bb_debug_out.caller.toString());
 //console.log(arguments.callee.caller.name);
 //console.log(arguments.callee.caller.name);
-		if (null !== debug_out.caller)
-			fn = debug_out.caller.name + '';
+		if (null !== bb_debug_out.caller)
+			fn = bb_debug_out.caller.name + '';
 		if (0 !== fn.length)
 			fn += '() ';
 		if ('undefined' !== typeof(val)) {
@@ -265,6 +273,8 @@ function debug_out(msg, val)
 };
 
 // create the instance of the Beaver Builder class
+// Normally, this would be added to the wpsitesynccontent global object but since Beaver Builder
+// runs on the Page as opposed to the Admin, we need to use a separate object.
 wpsitesync_beaverbuilder = new WPSiteSyncContent_BeaverBuilder();
 
 // initialize the WPSiteSync operation on page load
