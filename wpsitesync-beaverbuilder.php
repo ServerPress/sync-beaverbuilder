@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: WPSiteSync for Beaver Builder
-Plugin URI: http://wpsitesync.com
+Plugin URI: https://wpsitesync.com/downloads/wpsitesync-beaver-builder/
 Description: Allow Beaver Builder Content and Templates to be Synced to the Target site
 Author: WPSiteSync
-Author URI: http://wpsitesync.com
-Version: 1.0 Beta
+Author URI: https://wpsitesync.com
+Version: 1.1 Beta
 Text Domain: wpsitesync-beaverbuilder
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
@@ -22,17 +22,16 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		private static $_instance = NULL;
 
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
-		const PLUGIN_VERSION = '1.0';
+		const PLUGIN_VERSION = '1.1';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
 		const REQUIRED_VERSION = '1.5.1';		 // minimum version of WPSiteSync required for this add-on to initialize
 
 		const DATA_IMAGE_REFS = 'bb_image_refs';	// TODO: remove
 
-		private $_post_id = 0;			// Post ID of data being Pushed to Target
-		private $_api_request = NULL;		  // API Request instance used in pre-processing serialized data
-		private $_source_urls = NULL;		  // Source site's URL. Used for URL fixups
-		private $_target_urls = NULL;		  // Target site's URL. Used for URL fixups
-		private $_image_refs = array();
+		private $_post_id = 0;					// Post ID of data being Pushed to Target
+		private $_api_request = NULL;			// API Request instance used in pre-processing serialized data
+		private $_source_api = NULL;			// reference to SyncBeaverBuilderSourceAPI
+		private $_target_api = NULL;			// reference to SyncBeaverBuilderTargetAPI
 
 		private function __construct()
 		{
@@ -53,17 +52,13 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		}
 
 		/**
-		 * Filters settings field data for the strict mode configuration setting
-		 * @param array $args The arguments to be sent to rendering method
-		 * @return array Modified arguments, with message about Beaver Builder included
+		 * Helper method to load class files when needed
+		 * @param string $class Name of class file to load
 		 */
-		public function filter_setting_strict($args)
+		private function _load_class($class)
 		{
-			if (empty($args['description']))
-				$args['description'] = '';
-			$args['description'] .= (!empty($args['description']) ? '<br/>' : '' ) .
-				__('With WPSiteSync for Beaver Builder installed, version checking for Beaver Builder is also performed when Pushing Beaver Builder Content.', 'wpsitesync-beaverbuilder');
-			return $args;
+			$file = dirname(__FILE__) . '/classes/' . $class . '.php';
+			require_once($file);
 		}
 
 		/**
@@ -73,10 +68,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		{
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
 
-			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
-SyncDebug::log(__METHOD__ . '() no license');
-				return;
-			}
+#		if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+#SyncDebug::log(__METHOD__ . '() no license');
+#				return;
+#			}
 
 			add_filter('spectrom_sync_setting-strict', array($this, 'filter_setting_strict'));
 
@@ -108,14 +103,13 @@ SyncDebug::log(__METHOD__ . '() no license');
 			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 
 			// hooks for adding settings push and image reference APIs
-			$this->_load_class('beaverbuilderapirequest', TRUE);
-			$api = new SyncBeaverBuilderApiRequest();
-			add_filter('spectrom_sync_api_request_action', array($api, 'api_request'), 20, 3); // called by SyncApiRequest
-			add_filter('spectrom_sync_api', array($api, 'api_controller_request'), 10, 3); // called by SyncApiController
-			add_action('spectrom_sync_api_request_response', array($api, 'api_response'), 10, 3); // called by SyncApiRequest->api()
 
-			add_filter('spectrom_sync_error_code_to_text', array($api, 'filter_error_codes'), 10, 3);
-			add_filter('spectrom_sync_notice_code_to_text', array($api, 'filter_notice_codes'), 10, 2);
+			add_filter('spectrom_sync_api_request_action', array($this, 'api_request_action'), 20, 3); // called by SyncApiRequest
+			add_filter('spectrom_sync_api', array($this, 'api_controller_request'), 10, 3); // called by SyncApiController
+			add_action('spectrom_sync_api_request_response', array($this, 'api_request_response'), 10, 3); // called by SyncApiRequest->api()
+
+			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 3);
+			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
 		}
 
 		/**
@@ -178,6 +172,54 @@ SyncDebug::log(__METHOD__ . '() no license');
 		}
 
 		/**
+		 * Filters settings field data for the strict mode configuration setting
+		 * @param array $args The arguments to be sent to rendering method
+		 * @return array Modified arguments, with message about Beaver Builder included
+		 */
+		public function filter_setting_strict($args)
+		{
+			if (empty($args['description']))
+				$args['description'] = '';
+			$args['description'] .= (!empty($args['description']) ? '<br/>' : '' ) .
+				__('With WPSiteSync for Beaver Builder installed, version checking for Beaver Builder is also performed when Pushing Beaver Builder Content.', 'wpsitesync-beaverbuilder');
+			return $args;
+		}
+
+		/**
+		 * Helper method to retrieve an API instance
+		 * @return SyncBeaverBuilderSourceAPI instance
+		 */
+		private function _get_source_api()
+		{
+			if (NULL === $this->_source_api) {
+				$this->_load_class('beaverbuildersourceapi');
+				$this->_source_api = new SyncBeaverBuilderSourceAPI();
+			}
+			if (!class_exists('SyncBeaverBuilderApiRequest', FALSE))
+				$this->_load_class('beaverbuilderapirequest');
+			return $this->_source_api;
+		}
+
+		/**
+		 * Helper method to retrieve an API instance
+		 * @return SyncBeaverBuilderTargetAPI instance
+		 */
+		private function _get_target_api()
+		{
+			if (NULL === $this->_target_api) {
+				$this->_load_class('beaverbuildertargetapi');
+				$this->_target_api = new SyncBeaverBuilderTargetAPI();
+			}
+			if (!class_exists('SyncBeaverBuilderApiRequest', FALSE))
+				$this->_load_class('beaverbuilderapirequest');
+			return $this->_target_api;
+		}
+
+		//
+		// callbacks for API operations on Target
+		//
+
+		/**
 		 * Handles fixup of data on the Target after SyncApiController has finished processing Content.
 		 * @param int $target_post_id The post ID being created/updated via API call
 		 * @param array $post_data Post data sent via API call
@@ -185,215 +227,26 @@ SyncDebug::log(__METHOD__ . '() no license');
 		 */
 		public function handle_push($target_post_id, $post_data, $response)
 		{
-			// TODO: refactor into a SyncBeaverBuilderPushProcess class
-SyncDebug::log(__METHOD__ . "({$target_post_id})");
-			return;
-
-			// list of object properties that refer to image ids
-//			$properties = array('hero_image', 'hero_subtitle_image', 'hero_video', 'about_image_field');
-			// setup search and replace array for domain fixups
-			$controller = SyncApiController::get_instance();
-			$controller->get_fixup_domains($this->_source_urls, $this->_target_urls);
-
-			$input = new SyncInput();
-
-			// process data found in the ['bb_image_refs'] element. create entries in spectrom_sync as needed
-			// do this *before* post_meta processing so we have target_post_ids for image references and can fixup IDs for Media Entries
-			$image_refs = $input->post_raw(self::DATA_IMAGE_REFS, array());
-			if (!empty($image_refs))
-				$this->_process_image_references($image_refs, $target_post_id);
-
-			// check POST contents to make sure we have something to work with
-			$post_meta = $input->post_raw('post_meta', array());
-			foreach ($post_meta as $meta_key => $meta_value) {
-				if ('_fl_builder_' === substr($meta_key, 0, 12)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found BeaverBuilder meta: ' . $meta_key . '=' . var_export($meta_value, TRUE));
-					if (is_array($meta_value)) {
-						// only bother with serialization fixup if it's an array
-						$meta_data = $meta_value[0];
-
-						// unslash
-						$meta_data = stripslashes($meta_data);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' stripped: ' . var_export($meta_data, TRUE));
-/* 						if (('_fl_builder_data' === $meta_key || '_fl_builder_draft' === $meta_key) &&
-							's:' === substr($meta_data, 0, 2)) {			// this is double serialized #15
-//							$meta_data = unserialize($meta_data);
-							$pos = strpos($meta_data, '"');
-							if (FALSE !== $pos) {
-								$meta_data = substr($meta_data, $pos + 1);
-								$meta_data = substr($meta_data, 0, strlen($meta_data) - 1);
-							} else {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sub-serialized string not found');
-							}
-						} */
-						$meta_ = maybe_unserialize($meta_data);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' ** meta data before key "' . $meta_key . '": [' . var_export($meta_, TRUE) . ']');
-
-						// fixup domains using SyncSerialize->parse_data() and fixup_url_references() callback
-						if (is_serialized($meta_data)) {
-							// if it's serialized data, use the SyncSerialize->parse_data() to fix domain references
-							$ser = new SyncSerialize();
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing domains: ' . implode(',', $this->_source_urls) . ' -> ' . $this->_target_urls[0]);
-							$meta_data = $ser->parse_data($meta_data, array($this, 'fixup_url_references'));
-						} else {
-							// if it's a string, use a simple str_ireplace()
-							$meta_data = str_ireplace($this->_source_urls, $this->_target_urls, $meta_data);
-						}
-
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' data ready for insertion: ' . var_export($meta_data, TRUE));
-						// convert to an object. this is done so that serialized objects are saved correctly via update_post_meta()
-						$meta_object = maybe_unserialize($meta_data);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' unserialized data "' . $meta_key . '" = ' . var_export($meta_object, TRUE));
-
-						// scan meta object for items referencing image objects
-						if ('_fl_builder_data' === $meta_key || '_fl_builder_draft' === $meta_key) {
-							$sync_model = new SyncModel();
-							$meta_object = unserialize($meta_data);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' searching elements: ' . var_export($meta_object, TRUE));
-							foreach ($meta_object as $obj_key => &$object) {
-								if (isset($object->settings) && is_object($object->settings)) {
-									// this instance has a $settings property. look through this to find urls and media IDs to update
-//									$class_vars = get_class_vars($object->settings);
-									$obj_vars = get_object_vars($object->settings);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj_vars: ' . var_export($obj_vars, TRUE));
-									if (NULL !== $obj_vars) {
-										$class_vars = array_keys($obj_vars);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' class_vars: ' . var_export($class_vars, TRUE));
-										foreach ($class_vars as $var) {
-											// typical properties include: 'hero_image', 'hero_subtitle_image',
-											// 'hero_video', 'animation' 'id', 'about_image_field' id fixup needs to occur
-											if ('_src' === substr($var, -4)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' object has a _src property');
-												// found a property with a '_src' ending
-												$prop = substr($var, 0, (strlen($var) - 4));
-												if (isset($object->settings->$prop)) {
-													// there's a '{prop}' property and a '{prop}_src' property
-													$source_image_id = abs($object->settings->$prop);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' source image id=' . $source_image_id);
-													$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' get_sync_data(' . $source_image_id . ', "' . $controller->source_site_key . '")=' . var_export($sync_data, TRUE));
-													if (NULL !== $sync_data) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' fixing attachment id "' . $prop . '" source=' . $source_image_id . ' target=' . $sync_data->target_content_id);
-														if (is_int($object->settings->$prop))
-															$object->settings->$prop = abs($sync_data->target_content_id);
-														else
-															$object->settings->$prop = strval(abs($sync_data->target_content_id));
-													}
-												}
-											} // == '_src'
-										} // foreach
-
-										// handle slideshow photo references
-										if (isset($obj_vars['type']) && 'slideshow' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "slideshow" module');
-											$photos = $obj_vars['photos'];
-										}
-									}
-								} // isset($object->settings)
-
-								// look for video references
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
-								if (!empty($object->settings->bg_video) && isset($object->settings->bg_video_data) &&
-									!empty($object->settings->bg_video_data->id)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found video id: ' . $object->settings->bg_video_data->id);
-									$source_image_id = abs($object->settings->bg_video_data->id);
-									$sync_data = $sync_model->get_sync_data($source_image_id, $controller->source_site_key);
-									if (NULL !== $sync_data) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found target id: ' . $sync_data->target_content_id);
-										$object->settings->bg_video = strval($sync_data->target_content_id);
-										$object->settings->bg_video_data->id = abs($sync_data->target_content_id);
-										$object->settings->bg_video_data->editLink = str_replace('?post=' . $source_image_id . '&', '?post=' . $sync_data->target_content_id . '&', $object->settings->bg_video_data->editLink);
-									}
-								}
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done checking videos references');
-							} // foreach()
-						} // '_fl_builder_data' || '_fl_builder_draft' meta data
-
-						// re-serialie this one
-						// TODO: check this.
-//						if ('_fl_builder_draft' === $meta_key)
-//							$meta_object = serialize($meta_object);
-						// write the updated meta data
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' ** meta data after key "' . $meta_key . '": [' . var_export($meta_object, TRUE) . ']');
-						update_post_meta($target_post_id, $meta_key, $meta_object);
-					}
-				}
-			}
+			$this->_get_target_api();
+			$this->_target_api->handle_push($target_post_id, $post_data, $response);
 		}
 
 		/**
-		 * Adds any references to media instances to the queue
-		 * @param int $image_id ID of the attachment from the Media Library
-		 * @param string $image_src URL reference to the attachment in the Media Library
-		 * @param array $data The post data being filtered for the Push operation
+		 * Handles the requests being processed on the Target from SyncApiController. This handles API requests introduced by the Beaver Builder add-on.
+		 * @param boolean $return filter value
+		 * @param string $action The API request action
+		 * @param SyncApiResponse $response The response instance
+		 * @return boolean $response TRUE when handling a API request action; otherwise FALSE
 		 */
-		// TODO: remove $data parameter
-		private function _send_media_instance($image_id, $image_src, &$data)
+		public function api_controller_request($return, $action, SyncApiResponse $response)
 		{
-SyncDebug::log(__METHOD__ . "({$image_id}, '{$image_src}', ...)");
-			$image_id = abs($image_id);
-//			if (0 !== $image_id && !in_array($image_id, $data[self::DATA_IMAGE_REFS])) {
-			if (0 !== $image_id && !isset($this->_image_refs[$image_id])) {
-//				$data[self::DATA_IMAGE_REFS][$image_id] = $image_src;
-				$this->_image_refs[$image_id] = $image_src;
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . " calling send_media('{$image_src}', {$this->_post_id}, 0, {$image_id})");
-				$this->_api_request->send_media($image_src, $this->_post_id, 0, $image_id);
-			}
+			$this->_get_target_api();
+			return $this->_target_api->api_controller_request($return, $action, $response);
 		}
 
-		/**
-		 * Callback for SyncSerialize->parse_data() when parsing the serialized data. Change old Source domain to Target domain.
-		 * @param SyncSerializeEntry $entry The data representing the current node processed by Serialization parser.
-		 */
-		public function fixup_url_references($entry)
-		{
-			$entry->content = str_ireplace($this->_source_urls, $this->_target_urls, $entry->content);
-		}
-
-		/**
-		 * Processes Image references found in the ['bb_image_refs'] parameter in the API call on the Target
-		 * This will create entries in the spectrom_sync table and Media Library as needed.
-		 * @param array $image_refs Array of image ID references contained in Push request
-		 * @param int $target_post_id The parent post ID for images
-		 */
-		private function _process_image_references($image_refs, $target_post_id)
-		{
-			// we need to handle these here so that when the next 'upload_media' API call occurs that
-			// references these images comes in, we already have the entry in spectrom_sync and we can make
-			// the appropriate Source ID to Target ID changes when processing meta data within handle_push().
-
-			$sync_model = new SyncModel();
-			$attach_model = new SyncAttachModel();
-			$controller = SyncApiController::get_instance();
-			$site_key = $controller->source_site_key;
-			$target_site_key = SyncOptions::get('site_key');
-
-			$source = $controller->source;
-			$target = site_url();
-
-			foreach ($image_refs as $img_id => $img_src) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found media #' . $img_id . ' - ' . $img_src);
-				$entry = $sync_model->get_sync_data($img_id);
-				if (NULL === $entry) {
-					// create the attachment entry in wp_posts
-					$guid = str_replace($source, $target, $img_src);
-					$target_image_id = $attach_model->create_from_guid($guid, $target_post_id);
-
-					if (0 !== $target_image_id) {
-						// no record exists, create one
-						$data = array(
-							'site_key' => $site_key,
-							'source_content_id' => $img_id,
-							'target_content_id' => $target_image_id,
-							'target_site_key' => $target_site_key,
-							'content_type' => 'post',
-						);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' saving sync entry: ' . var_export($data, TRUE));
-						$sync_model->save_sync_data($data);
-					}
-				}
-			}
-		}
+		//
+		// callbacks for API operations on Target
+		//
 
 		/**
 		 * Callback for handling AJAX operations
@@ -416,6 +269,31 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		}
 
 		/**
+		 * Handles the request on the Source after API Requests are made and the response is ready to be interpreted. Called by SyncApiRequest->api().
+		 * @param string $action The API name, i.e. 'push' or 'pull'
+		 * @param array $remote_args The arguments sent to SyncApiRequest::api()
+		 * @param SyncApiResponse $response The response object after the API requesst has been made
+		 */
+		public function api_request_response($action, $remote_args, $response)
+		{
+			$this->_get_source_api();
+			$this->_source_api->api_request_response($action, $remote_args, $response);
+		}
+
+		/**
+		 * Called from SyncApiRequest on the Source. Checks the API request and perform custom API actions
+		 * @param array $args The arguments array sent to SyncApiRequest::api()
+		 * @param string $action The API requested
+		 * @param array $remote_args Array of arguments sent to SyncRequestApi::api()
+		 * @return array The modified $args array, with any additional information added to it
+		 */
+		public function api_request_action($args, $action, $remote_args)
+		{
+			$this->_get_source_api();
+			$this->_source_api->api_request_action($args, $action, $remote_args);
+		}
+
+		/**
 		 * Callback for filtering the post data before it's sent to the Target. Here we check for image references within the meta data.
 		 * @param array $data The data being Pushed to the Target machine
 		 * @param SyncApiRequest $apirequest Instance of the API Request object
@@ -423,193 +301,8 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		 */
 		public function filter_push_content($data, $apirequest)
 		{
-			// TODO: this needs to be refactored into a SyncBeaverBuilderPushContent class
-			add_action('spectrom_sync_push_queue_complete', array($this, 'image_ref_api'), 10, 1);
-
-SyncDebug::log(__METHOD__ . '()'); //  data=' . var_export($data, TRUE)); // . var_export($data, TRUE));
-			// look for media references and call SyncApiRequest->send_media() to add media to the Push operation
-			if (isset($data['post_meta'])) {
-				$post_id = 0;
-				if (isset($data['post_id']))	  // present on Push operations
-					$post_id = abs($data['post_id']);
-				else if (isset($data['post_data']['ID']))   // present on Pull operations
-					$post_id = abs($data['post_data']['ID']);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' post id=' . $post_id);
-				$this->_post_id = $post_id;	   // set this up for use in _send_media_instance()
-				$data[self::DATA_IMAGE_REFS] = array();	// initialize the list of image references
-
-				$regex_search = "/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/";
-				$attach_model = new SyncAttachModel();
-
-				// set up some values to be used to identify site-specific image references vs. non-site images
-				$site_url = site_url();
-				$upload = wp_upload_dir();
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' upload info=' . var_export($upload, TRUE));
-				$upload_url = $upload['baseurl'];
-				// this sets the source domain- needed for SynApiRequest::send_media() to work
-				$apirequest->set_source_domain(parse_url($site_url, PHP_URL_HOST));
-				$this->_api_request = $apirequest;   // save this for the _send_media_instance() method
-
-				foreach ($data['post_meta'] as $meta_key => $meta_value) {
-					if ('_fl_builder_' === substr($meta_key, 0, 12)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found key: ' . $meta_key);
-						$meta_data = serialize($meta_value);
-						$meta_data = str_replace('"', ' " ', $meta_data);
-						// look for any image references
-						// TODO: look for other media: audio / video
-						// check if there is a url in the text
-						$urls = array();
-						if (preg_match_all($regex_search, $meta_data, $urls)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found urls: ' . var_export($urls, TRUE));
-							if (isset($urls[0]) && 0 !== count($urls[0])) {
-								// look for only those URL references that match the current site's URL
-								foreach ($urls[0] as $url) {
-//									if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
-									if ($site_url === substr($url, 0, strlen($site_url)) && FALSE !== strpos($url, $upload_url)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' syncing image: ' . $url);
-										$attach_posts = $attach_model->search_by_guid($url, TRUE);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' res=' . var_export($attach_posts, TRUE));
-										// ignore any images that are not found in the Image Library
-										if (0 === count($attach_posts)) {
-SyncDebug::log(' - no attachments found with this name, skipping');
-											continue;
-										}
-
-										// find the attachment id
-										$attach_id = 0;
-										foreach ($attach_posts as $attach_post) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' checking guid "' . $attach_post->guid . '"');
-SyncDebug::log(__METHOD__ . '() - ID #' . $attach_post->ID);
-SyncDebug::log(__METHOD__ . '() - url="' . $url . '"');
-SyncDebug::log(__METHOD__ . '() - attach guid="' . $attach_post->guid . '"');
-SyncDebug::log(__METHOD__ . '() - orig guid="' . (isset($attach_post->orig_guid) ? $attach_post->orig_guid : 'NULL') . '"');
-											if ($attach_post->guid === $url) {
-												$attach_id = $attach_post->ID;
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found matching for id#' . $attach_id);
-												break;
-											} else if (isset($attach_post->orig_guid)) { // && $url === $attach_post->orig_guid) {
-												// set the URL to what was found by the search_by_guid() extended search
-												$attach_id = $attach_post->ID;
-												$url = $attach_post->guid;
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' resetting #' . $attach_id . ' url to ' . $url);
-											}
-										}
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' attach id=' . $attach_id);
-										// TODO: ensure images found via extended search are not causing duplicate uploads
-										$apirequest->send_media($url, $post_id, 0, $attach_id);
-									}
-								}
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done processing images');
-							}
-						}
-					}
-
-					if ('_fl_builder_data' === $meta_key || '_fl_builder_draft' === $meta_key) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for images references in meta data');
-						$meta_data = unserialize($meta_value[0]);
-//						$meta_data = unserialize($meta_data);
-SyncDebug::log('=' . var_export($meta_value[0], TRUE));
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' meta value=' . var_export($meta_data, TRUE));
-						foreach ($meta_data as $key => $object) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' key=' . $key);
-							// search for '_src' suffixed properties
-							if (isset($object->settings) && is_object($object->settings)) {
-								$obj_vars = get_object_vars($object->settings);
-								if (NULL !== $obj_vars) {
-									$class_vars = array_keys($obj_vars);
-									foreach ($class_vars as $var) {
-										// typical properties include: 'hero_image', 'hero_subtitle_image',
-										// 'hero_video', 'animation' 'id', 'about_image_field' id fixup needs to occur
-										if ('_src' === substr($var, -4)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found property: ' . $var);
-											// found a property with a '_src' ending
-											$prop = substr($var, 0, (strlen($var) - 4));
-											if (isset($object->settings->$prop)) {
-												// there's a '{prop}' property and a '{prop}_src' property
-												$img_id = abs($object->settings->$prop);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
-												$this->_send_media_instance($img_id, $object->settings->$var, $data);
-											}
-										}
-									}
-
-									// handle slideshow photo references #22
-									if (isset($obj_vars['type']) && 'slideshow' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found "slideshow" module: ' . var_export($obj_vars['photo_data'], TRUE));
-										$photos = $obj_vars['photos'];
-										foreach ($photos as $photo_img) {
-											$img_id = abs($photo_img);
-											$img_src = wp_get_attachment_image_src($img_id, 'full');
-											if (FALSE !== $img_src) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending media #' . $img_id . ': ' . var_export($img_src, TRUE));
-												$this->_send_media_instance($img_id, $img_src[0], $data);
-											}
-										}
-									}
-
-									// handle video references #31
-									if (isset($obj_vars['type']) && 'video' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found a video object');
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
-										if (isset($obj_vars['video_type']) && 'media_library' === $obj_vars['video_type']) {
-											$video_id = abs($obj_vars['video']);
-											$video_src = $obj_vars['data']->url;
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video src=' . var_export($video_src, TRUE));
-											if (FALSE !== $video_src && !empty($video_src)) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending video #' . $video_id . ': ' . var_export($video_src, TRUE));
-												$this->_send_media_instance($video_id, $video_src[0], $data);
-											}
-else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data=' . var_export($data, TRUE));
-										}
-									}
-
-									// look for testimonials #41
-									if (isset($obj_vars['type']) && 'testimonials' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found testimonial object');
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
-										// look for image references in the testimonials
-										foreach ($obj_vars['testimonials'] as $testi) {
-											$content = $testi->testimonial;
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' content=' . $content);
-											$apirequest->parse_media($post_id, $content);
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' completed parse_media() call');
-										}
-									}
-
-									// give add-ons a chance to look up any custom references
-									do_action('spectrom_sync_beaverbuilder_serialized_data_reference', $object, $post_id, $this->_api_request);
-								} else {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj_vars=NULL');
-								}
-							} // isset($object->settings)
-
-							// look for video references
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');
-							if (!empty($object->settings->bg_video) && isset($object->settings->bg_video_data) &&
-								!empty($object->settings->bg_video_data->id)) {
-								$img_id = abs($object->settings->bg_video_data->id);
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
-								$this->_send_media_instance($img_id, $object->settings->bg_video_data->url, $data);
-							}
-							// TODO: look for any additional references
-						} // foreach ($meta_data)
-					}
-				}
-			}
-
-			return $data;
-		}
-
-		/**
-		 * Callback for 'spectrom_sync_push_queue_complete' action when Push queue is empty. Used to trigger Image Reference API call.
-		 */
-		public function image_ref_api($api_request)
-		{
-			$data = array(
-				'post_id' => $this->_post_id,
-				'bb_image_refs' => $this->_image_refs,
-			);
-			$api_request->api(SyncBeaverBuilderApiRequest::API_IMAGE_REFS, $data);
+			$this->_get_source_api();
+			return $this->_source_api->filter_push_content($data, $apirequest);
 		}
 
 		/**
@@ -620,10 +313,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 		 */
 		public function filter_allowed_mime_types($allowed, $type)
 		{
-			// add audio types #7
-			if (in_array($type['ext'], array('ai', 'avi', 'flv', 'midi', 'wmv', 'mp4', 'mp3', 'mov', 'wav', 'wma')))
-				$allowed = TRUE;
-			return $allowed;
+			$this->_get_target_api();
+			return $this->_target_api->filter_allowed_mime_types($allowed, $type);
 		}
 
 		/**
@@ -647,6 +338,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' enqueueing "sync-beaverbuilder" s
 		/**
 		 * Outputs the HTML content for the WPSiteSync Beaver Builder UI
 		 */
+		// TODO: move to SyncBeaverBuilderUI class
 		public function output_html_content()
 		{
 			global $post;
@@ -703,16 +395,16 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' enqueueing "sync-beaverbuilder" s
 		 */
 		public function allow_custom_post_types($post_types)
 		{
-			if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+#			if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
 				$post_types[] = 'fl-builder-template';	// bb templates
 				$post_types[] = 'fl-theme-layout';	 // bb themes #14
-			}
+#			}
 
 			return $post_types;
 		}
 
 		/**
-		 * Adds all known taxonomies to the list of available taxonomies for Syncing
+		 * Adds all Beaver Builder taxonomies to the list of available taxonomies for Syncing
 		 * @param array $tax Array of taxonomy information to filter
 		 * @return array The taxonomy list, with all taxonomies added to it
 		 */
@@ -732,6 +424,32 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' enqueueing "sync-beaverbuilder" s
 			return $tax;
 		}
 
+		/**
+		 * Filters the errors list, adding SyncBeaverBuilder specific code-to-string values
+		 * @param string $message The error string message to be returned
+		 * @param int $code The error code being evaluated
+		 * @return string The modified $message string, with Beaver Builder specific errors added to it
+		 */
+		public function filter_error_codes($message, $code, $data)
+		{
+			$this->_load_class('beaverbuilderapirequest', TRUE);
+			$api = new SyncBeaverBuilderApiRequest();
+			return $api->filter_error_code($message, $code, $data);
+		}
+
+		/**
+		 * Filters the notices list, adding SyncBeaverBuilder specific code-to-string values
+		 * @param string $message The notice string message to be returned
+		 * @param int $code The notice code being evaluated
+		 * @return string The modified $message string, with Beaver Builder specific notices added to it
+		 */
+		public function filter_notice_codes($message, $code)
+		{
+			$this->_load_class('beaverbuilderapirequest', TRUE);
+			$api = new SyncBeaverBuilderApiRequest();
+			return $api->filter_notice_codes($message, $code);
+		}
+	
 		/**
 		 * Adds custom taxonomy information to the data array collected for the current post
 		 * @param array $data The array of data that will be sent to the Target
@@ -774,16 +492,6 @@ else if (!isset($data['post_data']['post_type']))
 					'file' => __FILE__,
 				);
 			return $extensions;
-		}
-
-		/**
-		 * Helper method to load class files when needed
-		 * @param string $class Name of class file to load
-		 */
-		private function _load_class($class)
-		{
-			$file = dirname(__FILE__) . '/classes/' . $class . '.php';
-			require_once($file);
 		}
 	}
 }
