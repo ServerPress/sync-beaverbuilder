@@ -124,7 +124,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "slideshow" module');
 										$photos = $obj_vars['photos'];
 									}
 
-									// handle audio modules
+									// handle audio modules #48
 									if (isset($obj_vars['type']) && 'audio' === $obj_vars['type']) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found "audio" module data=' . var_export($obj_vars['data'], TRUE));
 										// update post ID of image reference
