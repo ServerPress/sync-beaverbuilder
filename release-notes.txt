@@ -1,3 +1,5 @@
 * enhancement: add detection for Beaver Builder plugin installed/activated.
 * enhancement: update htaccess for Apache 2.4 config.
+* enhancement: organize code into Source API and Target API classes
 * fix: rework code that checks saved state of page and allows/disallows Push buttons after content is Published.
+* fix: update data for audio module based on Target attachment and post IDs.
