@@ -1,6 +1,6 @@
 <?php
 
-class SyncBeaverBuilderApiRequest extends SyncInput
+class SyncBeaverBuilderApiRequest
 {
 	private static $_instance = NULL;
 
