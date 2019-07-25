@@ -149,8 +149,9 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done processing images');
 					}
 				}
 
+				// if it's a data or draft - look for references to attachments and other posts
 				if ('_fl_builder_data' === $meta_key || '_fl_builder_draft' === $meta_key) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for images references in meta data');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for resource references in meta data');
 					$meta_data = unserialize($meta_value[0]);
 //						$meta_data = unserialize($meta_data);
 SyncDebug::log('=' . var_export($meta_value[0], TRUE));
@@ -159,6 +160,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' meta value=' . var_export($meta
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' key=' . $key);
 						// search for '_src' suffixed properties
 						if (isset($object->settings) && is_object($object->settings)) {
+if (isset($object->settings->type))
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' object type="' . $object->settings->type . '"');
 							$obj_vars = get_object_vars($object->settings);
 							if (NULL !== $obj_vars) {
 								$class_vars = array_keys($obj_vars);
@@ -173,7 +176,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found property: ' . $var);
 											// there's a '{prop}' property and a '{prop}_src' property
 											$img_id = abs($object->settings->$prop);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
-											$this->_send_media_instance($img_id, $object->settings->$var, $data);
+											if (0 !== $img_id)
+												$this->_send_media_instance($img_id, $object->settings->$var, $data);
 										}
 									}
 								}
