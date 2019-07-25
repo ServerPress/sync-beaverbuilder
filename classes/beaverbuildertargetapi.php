@@ -1,7 +1,8 @@
 <?php
 
-class SyncBeaverBuilderTargetAPI
+class SyncBeaverBuilderTargetAPI extends SyncInput
 {
+	private $_target_post_id = FALSE;			// post ID being updated on Target
 	private $_push_data;						// data being Pushed via the current request
 
 	private $_source_site_key = NULL;
@@ -303,6 +304,10 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' handling pull settings API');
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' handling image refs API');
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post data=' . var_export($_POST, TRUE));
 			$return = $this->_fix_serialized_data($response);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' clearing cache for post ' . var_export($this->_target_post_id, TRUE));
+			// add call to break cache. _fix_serialized_data() will set target post id to FALSE if/when Saved Rows/Modules are in use
+			// to allow flushing all cached items in those cases. #51
+			FLBuilderModel::delete_all_asset_cache($this->_target_post_id);
 			break;
 		}
 
@@ -333,20 +338,16 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' post data=' . var_export($_POST, 
 	private function _fix_serialized_data(SyncApiResponse $response)
 	{
 SyncDebug::log(__METHOD__.'():' . __LINE__);
-		// setup search and replace array for domain fixups
-if (NULL === $this->_source_site_key) SyncDebug::log(__METHOD__.'():' . __LINE__ . ' ERROR: source site key not set');
-		// TODO: potentially remove these since they're initialized in _sync_model()
-		$controller = SyncApiController::get_instance();
-//		$controller->get_fixup_domains($this->_source_urls, $this->_target_urls);
-		$this->_source_site_key = $controller->source_site_key;
-
 		// construct a list of known image Source IDs and their Target IDs from the API parameters
 		$this->_build_image_list();
+
+if (NULL === $this->_source_site_key) SyncDebug::log(__METHOD__.'():' . __LINE__ . ' ERROR: source site key not set');
 
 		// set up Source and Target ID values
 		$source_post_id = $this->post_int('post_id');
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' source post id=' . $source_post_id);
 		$target_post_id = $this->_get_target_id($source_post_id);
+		$this->_target_post_id = $target_post_id;
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' target post id=' . $target_post_id);
 
 		// search for all Post Meta data and correct and Image IDs and URLs found
@@ -484,6 +485,10 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' starting gallery object: ' . var_
 								$object->settings->photos = $photo_ids;
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' fixed gallery object: ' . var_export($object, TRUE));
 							} // 'gallery'
+
+							// TODO: handle Saved Rows and Saved Modules #50
+							// TODO: if using Saved Rows or Saved Modules, set $this->_target_post_id = FALSE
+							//		 to indicate to delete_all_asset_cache() to clear all cache data
 						}
 
 						// look for video references
