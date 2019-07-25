@@ -102,8 +102,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 			add_action('spectrom_sync_push_content', array($this, 'handle_push'), 10, 3);
 			add_filter('spectrom_sync_upload_media_allowed_mime_type', array($this, 'filter_allowed_mime_types'), 10, 2);
 
-			// hooks for adding settings push and image reference APIs
+			// filter for blocking images within the bb-plugin directory from being Pushed
+			add_filter('spectrom_sync_send_media_attachment', array($this, 'filter_send_media_attachment'), 10, 3);
 
+			// hooks for adding settings push and image reference APIs
 			add_filter('spectrom_sync_api_request_action', array($this, 'api_request_action'), 20, 3); // called by SyncApiRequest
 			add_filter('spectrom_sync_api', array($this, 'api_controller_request'), 10, 3); // called by SyncApiController
 			add_action('spectrom_sync_api_request_response', array($this, 'api_request_response'), 10, 3); // called by SyncApiRequest->api()
@@ -183,6 +185,21 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 			$args['description'] .= (!empty($args['description']) ? '<br/>' : '' ) .
 				__('With WPSiteSync for Beaver Builder installed, version checking for Beaver Builder is also performed when Pushing Beaver Builder Content.', 'wpsitesync-beaverbuilder');
 			return $args;
+		}
+
+		/**
+		 * Filter the sending of images in the bb-plugin directory
+		 * @param boolean $send Value to be filtered
+		 * @param string $url The full path to the URL being sent to the Target
+		 * @param int $attach_id The ID of the attachment
+		 * @return boolean TRUE (default) for sending the image; otherwise FALSE to block sending the image
+		 */
+		public function filter_send_media_attachment($send, $url, $attach_id)
+		{
+			// if the image path contains wp-content and bb-plugin, block sending of this image
+			if (FALSE !== strpos($url, 'wp-content') && FALSE !== strpos($url, 'plugins') && FALSE !== strpos($url, 'bb-plugin'))
+				$send = FALSE;
+			return $send;
 		}
 
 		/**
@@ -290,7 +307,7 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		public function api_request_action($args, $action, $remote_args)
 		{
 			$this->_get_source_api();
-			$this->_source_api->api_request_action($args, $action, $remote_args);
+			return $this->_source_api->api_request_action($args, $action, $remote_args);
 		}
 
 		/**
@@ -322,15 +339,13 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		 */
 		public function enqueue_scripts()
 		{
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' registering "sync-beaverbuilder" script');
+//SyncDebug::log(__METHOD__.'():' . __LINE__ . ' registering "sync-beaverbuilder" script');
 			wp_register_script('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/js/sync-beaverbuilder.js', array('jquery'), self::PLUGIN_VERSION, TRUE);
-			if (isset($_GET['fl_builder'])) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' enqueueing "sync-beaverbuilder" script');
-				wp_enqueue_script('sync-beaverbuilder');
-			}
-
 			wp_register_style('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/css/sync-beaverbuilder.css', array(), self::PLUGIN_VERSION);
+
 			if (isset($_GET['fl_builder'])) {
+				// only need to enqueue these if the Beaver Builder editor is being loaded on the page
+				wp_enqueue_script('sync-beaverbuilder');
 				wp_enqueue_style('sync-beaverbuilder');
 			}
 		}
