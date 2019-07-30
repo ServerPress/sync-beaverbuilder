@@ -274,14 +274,23 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		 */
 		public function ajax_operation($handled, $operation, $response)
 		{
-			if ('pushbeaverbuildersettings' === $operation) {
 SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
+			if ('pushbeaverbuildersettings' === $operation) {
 				$api = new SyncApiRequest();
 				$api_response = $api->api('pushbeaverbuildersettings');
 				$response->copy($api_response);
-				$response->success(TRUE);
+				if (!$api->response->has_errors())
+					$response->success(TRUE);
+				$handled = TRUE;
+			} else if ('pullbeaverbuildersettings' === $operation) {
+				$api = new SyncApiRequest();
+				$api_response = $api->api('pullbeaverbuildersettings');
+				$response->copy($api_response);
+				if (!$api_response->has_errors())
+					$response->success(TRUE);
 				$handled = TRUE;
 			}
+
 			return $handled;
 		}
 
@@ -449,7 +458,7 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		{
 			$this->_load_class('beaverbuilderapirequest', TRUE);
 			$api = new SyncBeaverBuilderApiRequest();
-			return $api->filter_error_code($message, $code, $data);
+			return $api->filter_error_codes($message, $code, $data);
 		}
 
 		/**

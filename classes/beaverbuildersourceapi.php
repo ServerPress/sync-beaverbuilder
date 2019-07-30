@@ -32,8 +32,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitiz
 			// read all options for Beaver Builder
 			global $wpdb;
 			$sql = "SELECT *
-					FROM `{$wpdb->options}`
-					WHERE `option_name` LIKE '_fl_builder%' OR `option_name` LIKE 'fl-builder%'";
+				FROM `{$wpdb->options}`
+				WHERE `option_name` LIKE '_fl_builder%' OR `option_name` LIKE 'fl-builder%'";
 			$res = $wpdb->get_results($sql, OBJECT);
 			foreach ($res as $row) {
 				if (!in_array($row->option_name, $settings_exclude)) {
@@ -45,15 +45,15 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitiz
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' push_data=' . var_export($push_data, TRUE));
 
 			$args['push_data'] = $push_data;
-			$args[self::BB_SETTINGS] = WPSiteSync_BeaverBuilder::PLUGIN_VERSION;
+			$args[SyncBeaverBuilderApiRequest::BB_SETTINGS] = WPSiteSync_BeaverBuilder::PLUGIN_VERSION;
 			break;
 
 		case SyncBeaverBuilderApiRequest::API_PUSH_SETTINGS:
-SyncDebug::log(__METHOD__ . '():' . __LINE__. ' args=' . SyncDebug::arr_sanitize($args));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitize($args));
 			break;
 
 		case SyncBeaverBuilderApiRequest::API_IMAGE_REFS:
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' args=' . SyncDebug::arr_sanitize($args));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitize($args));
 			break;
 		}
 
@@ -75,13 +75,13 @@ SyncDebug::log(__METHOD__ . '()'); //  data=' . var_export($data, TRUE)); // . v
 		// look for media references and call SyncApiRequest->send_media() to add media to the Push operation
 		if (isset($data['post_meta'])) {
 			$post_id = 0;
-			if (isset($data['post_id']))	  // present on Push operations
+			if (isset($data['post_id']))   // present on Push operations
 				$post_id = abs($data['post_id']);
 			else if (isset($data['post_data']['ID']))   // present on Pull operations
 				$post_id = abs($data['post_data']['ID']);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' post id=' . $post_id);
-			$this->_post_id = $post_id;	   // set this up for use in _send_media_instance()
-			$data[WPSiteSync_BeaverBuilder::DATA_IMAGE_REFS] = array();	// initialize the list of image references
+			$this->_post_id = $post_id;	// set this up for use in _send_media_instance()
+			$data[WPSiteSync_BeaverBuilder::DATA_IMAGE_REFS] = array(); // initialize the list of image references
 
 			$regex_search = "/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/";
 			$attach_model = new SyncAttachModel();
@@ -109,7 +109,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found urls: ' . var_export($url
 						if (isset($urls[0]) && 0 !== count($urls[0])) {
 							// look for only those URL references that match the current site's URL
 							foreach ($urls[0] as $url) {
-//									if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
+//								if ('http://' === substr($url, 0, 7) || 'https://' === substr($url, 0, 8)) {
 								if ($site_url === substr($url, 0, strlen($site_url)) && FALSE !== strpos($url, $upload_url)) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' syncing image: ' . $url);
 									$attach_posts = $attach_model->search_by_guid($url, TRUE);
@@ -143,11 +143,11 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' attach id=' . $attach_id);
 									// TODO: ensure images found via extended search are not causing duplicate uploads
 									$apirequest->send_media($url, $post_id, 0, $attach_id);
 								}
-							}
+							} // foreach
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done processing images');
-						}
-					}
-				}
+						} // isset($urls[0])
+					} // if preg_match_all
+				} // if ('_fl_builder_
 
 				// if it's a data or draft - look for references to attachments and other posts
 				if ('_fl_builder_data' === $meta_key || '_fl_builder_draft' === $meta_key) {
@@ -161,7 +161,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' key=' . $key);
 						// search for '_src' suffixed properties
 						if (isset($object->settings) && is_object($object->settings)) {
 if (isset($object->settings->type))
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' object type="' . $object->settings->type . '"');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' object type="' . $object->settings->type . '"');
 							$obj_vars = get_object_vars($object->settings);
 							if (NULL !== $obj_vars) {
 								$class_vars = array_keys($obj_vars);
@@ -190,7 +190,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found "slideshow" module: ' . v
 										$img_id = abs($photo_img);
 										$img_src = wp_get_attachment_image_src($img_id, 'full');
 										if (FALSE !== $img_src) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending media #' . $img_id . ': ' . var_export($img_src, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' sending media #' . $img_id . ': ' . var_export($img_src, TRUE));
 											$this->_send_media_instance($img_id, $img_src[0], $data);
 										}
 									}
@@ -198,30 +198,30 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending media #' . $img_id . ': '
 
 								// handle video references #31
 								if (isset($obj_vars['type']) && 'video' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found a video object');
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found a video object');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
 									if (isset($obj_vars['video_type']) && 'media_library' === $obj_vars['video_type']) {
 										$video_id = abs($obj_vars['video']);
 										$video_src = $obj_vars['data']->url;
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' video src=' . var_export($video_src, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' video src=' . var_export($video_src, TRUE));
 										if (FALSE !== $video_src && !empty($video_src)) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' sending video #' . $video_id . ': ' . var_export($video_src, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' sending video #' . $video_id . ': ' . var_export($video_src, TRUE));
 											$this->_send_media_instance($video_id, $video_src[0], $data);
 										}
-else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data=' . var_export($data, TRUE));
+else SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' data=' . var_export($data, TRUE));
 									}
 								}
 
 								// look for testimonials #41
 								if (isset($obj_vars['type']) && 'testimonials' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found testimonial object');
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found testimonial object');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
 									// look for image references in the testimonials
 									foreach ($obj_vars['testimonials'] as $testi) {
 										$content = $testi->testimonial;
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' content=' . $content);
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' content=' . $content);
 										$apirequest->parse_media($post_id, $content);
-SyncDebug::log(__METHOD__.'():' . __LINE__ . ' completed parse_media() call');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' completed parse_media() call');
 									}
 								}
 
@@ -242,9 +242,9 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 						}
 						// TODO: look for any additional references
 					} // foreach ($meta_data)
-				}
-			}
-		}
+				} // if ('_fl_builder_data'
+			} // foreach
+		} // isset($data['post_meta'])
 
 		return $data;
 	}
@@ -261,18 +261,18 @@ SyncDebug::log(__METHOD__ . "('{$action}')");
 
 		switch ($action) {
 		case SyncBeaverBuilderApiRequest::API_PUSH_SETTINGS:
-SyncDebug::log(__METHOD__ . '() response from push settings API request: ' . var_export($response, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' response from push settings API request: ' . var_export($response, TRUE));
 
 			$api_response = NULL;
 
 			if (isset($response->response)) {
-SyncDebug::log(__METHOD__ . '() decoding response: ' . var_export($response->response, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' decoding response: ' . var_export($response->response, TRUE));
 				$api_response = $response->response;
 			} else {
-SyncDebug::log(__METHOD__ . '() no reponse->response element');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' no reponse->response element');
 			}
 
-SyncDebug::log(__METHOD__ . '() api response body=' . var_export($api_response, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' api response body=' . var_export($api_response, TRUE));
 
 			if (0 === $response->get_error_code()) {
 				$response->success(TRUE);
@@ -281,21 +281,20 @@ SyncDebug::log(__METHOD__ . '() api response body=' . var_export($api_response, 
 			break;
 
 		case SyncBeaverBuilderApiRequest::API_PULL_SETTINGS:
-SyncDebug::log(__METHOD__ . '() response from pull settings API request: ' . var_export($response, TRUE));
-
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' response from pull settings API request: ' . var_export($response, TRUE));
 			$api_response = NULL;
 
 			if (isset($response->response)) {
-SyncDebug::log(__METHOD__ . '() decoding response: ' . var_export($response->response, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' decoding response: ' . var_export($response->response, TRUE));
 				$api_response = $response->response;
 			} else {
-SyncDebug::log(__METHOD__ . '() no response->response element');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ > ' no response->response element');
 			}
 
-SyncDebug::log(__METHOD__ . '() api response body=' . var_export($api_response, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' api response body=' . var_export($api_response, TRUE));
 
 			if (NULL !== $api_response) {
-				$save_post = $_POST;
+				$save_post = $_POST;			// save this to restore after simulated SyncApiController call
 
 				// convert the pull data into an array
 				$pull_data = json_decode(json_encode($api_response->data->pull_data), TRUE); // $response->response->data->pull_data;
@@ -305,8 +304,8 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - pull data=' . var_export($pul
 				$pull_data['site_key'] = $site_key;
 				$pull_data['pull'] = TRUE;
 
-				$_POST['push_data'] = $pull_data;
-				$_POST[self::BB_SETTINGS] = WPSiteSync_BeaverBuilder::PLUGIN_VERSION;
+				$_POST['push_data'] = $pull_data['push_data'];
+				$_POST[SyncBeaverBuilderApiRequest::BB_SETTINGS] = WPSiteSync_BeaverBuilder::PLUGIN_VERSION;
 				$_POST['action'] = SyncBeaverBuilderApiRequest::API_PUSH_SETTINGS;
 
 				$args = array(
@@ -318,16 +317,16 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - pull data=' . var_export($pul
 					'auth' => 0,
 				);
 
-SyncDebug::log(__METHOD__ . '() creating controller with: ' . var_export($args, TRUE));
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' creating controller with: ' . var_export($args, TRUE));
 				$this->_push_controller = new SyncApiController($args);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - returned from controller');
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - response=' . var_export($response, TRUE));
 
-				$_POST = $save_post;
+				$_POST = $save_post;			// restore original $_POST data
 
-				if (0 === $response->get_error_code()) {
-					$response->success(TRUE);
-				}
+//				if (0 === $response->get_error_code()) {
+//					$response->success(TRUE);
+//				}
 			}
 			break;
 

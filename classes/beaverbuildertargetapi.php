@@ -245,8 +245,8 @@ SyncDebug::log(__METHOD__ . "() handling '{$action}' action");
 		switch ($action) {
 		case SyncBeaverBuilderApiRequest::API_PUSH_SETTINGS:
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' post=' . var_export($_POST, TRUE));
-			if (FALSE === $this->post_raw(self::BB_SETTINGS, FALSE)) {
-				$response->error_code(self::ERROR_SETTINGS_DATA_NOT_FOUND);
+			if (FALSE === $this->post_raw(SyncBeaverBuilderApiRequest::BB_SETTINGS, FALSE)) {
+				$response->error_code(SyncBeaverBuilderApiRequest::ERROR_SETTINGS_DATA_NOT_FOUND);
 				return TRUE;
 			}
 
@@ -255,7 +255,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found push_data information: ' 
 
 			// check api parameters
 			if (empty($this->_push_data) || empty($this->_push_data['settings'])) {
-				$response->error_code(self::ERROR_SETTINGS_DATA_NOT_FOUND);
+				$response->error_code(SyncBeaverBuilderApiRequest::ERROR_SETTINGS_DATA_NOT_FOUND);
 				return TRUE;            // return, signaling that the API request was processed
 			}
 
@@ -297,6 +297,13 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' completed processing');
 
 		case SyncBeaverBuilderApiRequest::API_PULL_SETTINGS:
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' handling pull settings API');
+			if (!class_exists('SyncBeaverBuilderSourceApi', FALSE))
+				require_once(__DIR__ . '/beaverbuildersourceapi.php');
+			$source_api = new SyncBeaverBuilderSourceAPI();
+			$api_data = array();
+			$api_data = $source_api->api_request_action($api_data, SyncBeaverBuilderApiRequest::API_PUSH_SETTINGS, array());
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' api data=' . var_export($api_data, TRUE));
+			$response->set('pull_data', $api_data);
 			$return = TRUE;
 			break;
 
