@@ -1,7 +1,7 @@
 /*
  * @copyright Copyright (C) 2015-2019 WPSiteSync.com. - All Rights Reserved.
- * @license GNU General Public License, version 2 (http://www.gnu.org/licenses/gpl-2.0.html)
  * @author WPSiteSync.com <hello@WPSiteSync.com>
+ * @license GNU General Public License, version 2 (http://www.gnu.org/licenses/gpl-2.0.html)
  * @url https://wpsitesync.com/downloads/wpsitesync-beaver-builder/
  * The PHP code portions are distributed under the GPL license. If not otherwise stated, all images, manuals, cascading style sheets, and included JavaScript *are NOT GPL, and are released under the SpectrOMtech Proprietary Use License v1.0
  * More info at https://WPSiteSync.com/downloads/
