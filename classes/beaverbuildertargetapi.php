@@ -202,13 +202,38 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' done checking videos references
 						} // foreach()
 					} // '_fl_builder_data' || '_fl_builder_draft' meta data
 
-					// re-serialie this one
+					// re-serialize this one
 					// TODO: check this.
 //						if ('_fl_builder_draft' === $meta_key)
 //							$meta_object = serialize($meta_object);
 					// write the updated meta data
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' ** meta data after key "' . $meta_key . '": [' . var_export($meta_object, TRUE) . ']');
-					update_post_meta($target_post_id, $meta_key, $meta_object);
+if ('_fl_builder_template_id' === $meta_key) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . " update_post_meta({$target_post_id}, '{$meta_key}', " . var_export($meta_object, TRUE) . ')');
+}
+/*					if ('_fl_builder_' === substr($meta_key, 0, 12)) {
+						global $wpdb;
+						if (is_object($meta_object) || is_array($meta_object))
+							$write_meta = serialize($meta_object);
+						else
+							$write_meta = strval($meta_object);
+					$write_meta = maybe_serialize($meta_object);
+						$sql = "UPDATE `{$wpdb->postmeta}`
+								SET `meta_value`=%s
+								WHERE `post_id`=%d AND `meta_key`=%s
+								LIMIT 1";
+						$q = $wpdb->prepare($sql, $write_meta, $target_post_id, $meta_key);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' q=' . $q);
+						$res = $wpdb->query($q);
+	wp_cache_delete($target_post_id, 'post_meta');
+	wp_cache_flush();
+						$res = update_post_meta($target_post_id, $meta_key, $meta_object);
+					} else {
+						$res = update_post_meta($target_post_id, $meta_key, $meta_object);
+					} */
+					$res = update_post_meta($target_post_id, $meta_key, $meta_object);
+$val = get_post_meta($target_post_id, $meta_key, TRUE);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' meta data after update: [' . var_export($val, TRUE) . '] res=' . var_export($res, TRUE));
 				}
 			}
 		}
@@ -357,7 +382,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' source post id=' . $source_post_i
 		$this->_target_post_id = $target_post_id;
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' target post id=' . $target_post_id);
 
-		// search for all Post Meta data and correct and Image IDs and URLs found
+		// search for all Post Meta data and correct any Image IDs and URLs found
 
 		// read all BB specific meta data
 		global $wpdb;
@@ -377,6 +402,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' could not read postmeta for post 
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' meta entry=' . var_export($meta_entry, TRUE));
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' processing postmeta entry for "' . $meta_entry->meta_key . '" ' . strlen($meta_entry->meta_value) . ' bytes');
 			$meta_data = $meta_entry->meta_value;
+			$new_meta_data = NULL;
 
 			// fixup domains using SyncSerialize->parse_data() and fixup_url_references() callback
 /* moved to SyncApiController->push()
@@ -534,7 +560,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' completed work on object: ' . var
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' writing meta data: ' . var_export($new_meta_data, TRUE));
 			} // '_fl_builder_data' || '_fl_builder_draft' meta data
 
-			if ($new_meta_data !== $meta_data) {
+			// check to see if the data needs updating (not NULL) and has been modified
+			if (NULL !== $new_meta_data && $new_meta_data !== $meta_data) {
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' data has been updated, write to db');
 				// write the data back to the database
 				$sql = "UPDATE `{$wpdb->postmeta}`

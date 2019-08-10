@@ -2,7 +2,8 @@
 
 class SyncBeaverBuilderSourceAPI
 {
-	private $_image_refs = array();
+	private $_image_refs = array();			// holds list of image references from the current content
+	private $_post_refs = array();			// holds list of post references for Saved Rows and Saved Modules
 
 	/**
 	 * Called from SyncApiRequest on the Source. Checks the API request and perform custom API actions
@@ -81,6 +82,7 @@ SyncDebug::log(__METHOD__ . '()'); //  data=' . var_export($data, TRUE)); // . v
 				$post_id = abs($data['post_data']['ID']);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' post id=' . $post_id);
 			$this->_post_id = $post_id;	// set this up for use in _send_media_instance()
+			$this->_post_refs = array();
 			$data[WPSiteSync_BeaverBuilder::DATA_IMAGE_REFS] = array(); // initialize the list of image references
 
 			$regex_search = "/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,3}(\/\S*)?/";
@@ -182,46 +184,50 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' media id: ' . $img_id);
 									}
 								}
 
-								// handle slideshow photo references #22
-								if (isset($obj_vars['type']) && 'slideshow' === $obj_vars['type']) {
+								// examine specific node types:
+								if (isset($obj_vars['type']) && !empty($obj_vars['type'])) {
+									// there's a ['type'] entry within the object check for modules that need adjustments
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found a module type of "' . $obj_vars['type'] . '" - processing');
+									switch ($obj_vars['type']) {
+									case 'slideshow':							// handle slideshow photo references #22
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found "slideshow" module: ' . var_export($obj_vars['photo_data'], TRUE));
-									$photos = $obj_vars['photos'];
-									foreach ($photos as $photo_img) {
-										$img_id = abs($photo_img);
-										$img_src = wp_get_attachment_image_src($img_id, 'full');
-										if (FALSE !== $img_src) {
+										$photos = $obj_vars['photos'];
+										foreach ($photos as $photo_img) {
+											$img_id = abs($photo_img);
+											$img_src = wp_get_attachment_image_src($img_id, 'full');
+											if (FALSE !== $img_src) {
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' sending media #' . $img_id . ': ' . var_export($img_src, TRUE));
-											$this->_send_media_instance($img_id, $img_src[0], $data);
+												$this->_send_media_instance($img_id, $img_src[0], $data);
+											}
 										}
-									}
-								}
+										break;
 
-								// handle video references #31
-								if (isset($obj_vars['type']) && 'video' === $obj_vars['type']) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found a video object');
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
-									if (isset($obj_vars['video_type']) && 'media_library' === $obj_vars['video_type']) {
-										$video_id = abs($obj_vars['video']);
-										$video_src = $obj_vars['data']->url;
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' video src=' . var_export($video_src, TRUE));
-										if (FALSE !== $video_src && !empty($video_src)) {
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' sending video #' . $video_id . ': ' . var_export($video_src, TRUE));
-											$this->_send_media_instance($video_id, $video_src[0], $data);
-										}
-else SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' data=' . var_export($data, TRUE));
-									}
-								}
-
-								// look for testimonials #41
-								if (isset($obj_vars['type']) && 'testimonials' === $obj_vars['type']) {
+									case 'testimonials':						// handle testimonial references #41
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found testimonial object');
-SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
-									// look for image references in the testimonials
-									foreach ($obj_vars['testimonials'] as $testi) {
-										$content = $testi->testimonial;
+//SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
+										// look for image references in the testimonials
+										foreach ($obj_vars['testimonials'] as $testi) {
+											$content = $testi->testimonial;
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' content=' . $content);
-										$apirequest->parse_media($post_id, $content);
+											$apirequest->parse_media($post_id, $content);
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' completed parse_media() call');
+										}
+										break;
+
+									case 'video':								// handle video references #31
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' found a video object');
+//SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj=' . var_export($obj_vars, TRUE));
+										if (isset($obj_vars['video_type']) && 'media_library' === $obj_vars['video_type']) {
+											$video_id = abs($obj_vars['video']);
+											$video_src = $obj_vars['data']->url;
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' video src=' . var_export($video_src, TRUE));
+											if (FALSE !== $video_src && !empty($video_src)) {
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' sending video #' . $video_id . ': ' . var_export($video_src, TRUE));
+												$this->_send_media_instance($video_id, $video_src[0], $data);
+											}
+else SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' data=' . var_export($data, TRUE));
+										}
+										break;
 									}
 								}
 
@@ -231,6 +237,35 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' completed parse_media() call');
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' obj_vars=NULL');
 							}
 						} // isset($object->settings)
+
+						// check for specific node types
+						if (isset($object->type) && !empty($object->type)) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found a node of type "' . $object->type . '" - checking');
+							$ref_post_id = 0;
+							$ref_post_args = array();
+							switch ($object->type) {
+							case 'row':									// handle row references #50
+							case 'module':								// handle module references
+								$bb_model = new SyncBeaverBuilderModel();
+								$template_id = FALSE;
+								if (isset($object->template_id))
+									$template_id = $object->template_id;
+								if (FALSE !== $template_id) {
+									$ref_post_id = $bb_model->template_id_to_post_id($template_id);
+								}
+								$ref_post_args = array();
+								break;
+							}
+							if (0 !== $ref_post_id && !in_array($ref_post_id, $this->_post_refs)) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' got a post ID of ' . $ref_post_id . ' from template id "' . $template_id . '"');
+								// add referenced post to work queue so it'll get sent to the Target
+								$apirequest->add_queue('push', array('post_id' => $ref_post_id));
+								$this->_post_refs[] = $ref_post_id;
+							} else {
+if (0 !== $ref_post_id)
+	SyncDebug::log(__METHOD__.'():' . __LINE__ . ' ref post #' . $ref_post_id . ' has already been added to the queue');
+							}
+						}
 
 						// look for video references
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' looking for video references');

@@ -214,6 +214,8 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 			}
 			if (!class_exists('SyncBeaverBuilderApiRequest', FALSE))
 				$this->_load_class('beaverbuilderapirequest');
+			if (!class_exists('SyncBeaverBuilderModel', FALSE))
+				$this->_load_class('beaverbuildermodel');
 			return $this->_source_api;
 		}
 
@@ -229,6 +231,8 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 			}
 			if (!class_exists('SyncBeaverBuilderApiRequest', FALSE))
 				$this->_load_class('beaverbuilderapirequest');
+			if (!class_exists('SyncBeaverBuilderModel', FALSE))
+				$this->_load_class('beaverbuildermodel');
 			return $this->_target_api;
 		}
 
