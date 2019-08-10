@@ -44,6 +44,7 @@ console.log('.disable_buttons() disabled=' + (this.disabled ? 'true' : 'false'))
 		wpsitesynccontent.set_message(jQuery('#sync-message-save-settings').text(), false, true);
 		this.disabled = true;
 		jQuery('form input').removeAttr('disabled');
+		jQuery('form select').removeAttr('disabled');
 	}
 };
 
