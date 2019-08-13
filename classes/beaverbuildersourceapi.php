@@ -245,7 +245,8 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' found a node of type "' . $object
 							$ref_post_args = array();
 							switch ($object->type) {
 							case 'row':									// handle row references #50
-							case 'module':								// handle module references
+							case 'module':								// handle module references #50
+							case 'column':								// handle column references #53
 								$bb_model = new SyncBeaverBuilderModel();
 								$template_id = FALSE;
 								if (isset($object->template_id))
