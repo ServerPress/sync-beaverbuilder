@@ -254,6 +254,7 @@ SyncDebug::log(__METHOD__ . "() handling '{$action}' action");
 		case SyncBeaverBuilderApiRequest::API_PUSH_SETTINGS:
 		case SyncBeaverBuilderApiRequest::API_PULL_SETTINGS:
 		case SyncBeaverBuilderApiRequest::API_IMAGE_REFS:
+		case SyncBeaverBuilderApiRequest::API_PULL_IMAGE_REFS:
 			// only check licensing if it's a BB API call
 			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder',
 				WPSiteSync_BeaverBuilder::PLUGIN_KEY, WPSiteSync_BeaverBuilder::PLUGIN_NAME))
@@ -322,6 +323,7 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' completed processing');
 
 		case SyncBeaverBuilderApiRequest::API_PULL_SETTINGS:
 SyncDebug::log(__METHOD__.'():' . __LINE__ . ' handling pull settings API');
+			// TODO: should be able to remove this, it's loaded in WPSiteSync_BeaverBuilder::_get_source_api()
 			if (!class_exists('SyncBeaverBuilderSourceApi', FALSE))
 				require_once(__DIR__ . '/beaverbuildersourceapi.php');
 			$source_api = new SyncBeaverBuilderSourceAPI();
@@ -340,6 +342,10 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' clearing cache for post ' . var_e
 			// add call to break cache. _fix_serialized_data() will set target post id to FALSE if/when Saved Rows/Modules are in use
 			// to allow flushing all cached items in those cases. #51
 			FLBuilderModel::delete_all_asset_cache($this->_target_post_id);
+			break;
+
+		case SyncBeaverBuilderApiRequest::API_PULL_IMAGE_REFS:
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' handling image refs Pull API');
 			break;
 		}
 

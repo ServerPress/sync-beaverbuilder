@@ -5,6 +5,8 @@ class SyncBeaverBuilderSourceAPI
 	private $_image_refs = array();			// holds list of image references from the current content
 	private $_post_refs = array();			// holds list of post references for Saved Rows and Saved Modules
 
+	private $_push_controller = NULL;		// controller instance used to simulate Push operations
+
 	/**
 	 * Called from SyncApiRequest on the Source. Checks the API request and perform custom API actions
 	 * @param array $args The arguments array sent to SyncApiRequest::api()
@@ -56,6 +58,10 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitiz
 		case SyncBeaverBuilderApiRequest::API_IMAGE_REFS:
 SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitize($args));
 			break;
+
+		case SyncBeaverBuilderApiRequest::API_PULL_IMAGE_REFS:
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' args=' . SyncDebug::arr_sanitize($args));
+			break;
 		}
 
 		// return the filter value
@@ -70,9 +76,18 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' args=' . SyncDebug::arr_sanitiz
 	 */
 	public function filter_push_content($data, $apirequest)
 	{
-		add_action('spectrom_sync_push_queue_complete', array($this, 'image_ref_api'), 10, 1);
-
 SyncDebug::log(__METHOD__ . '()'); //  data=' . var_export($data, TRUE)); // . var_export($data, TRUE));
+		// check to see if this is a Pull operation or a Push and connect the appropriate handler for after queue handling
+		$op = NULL;
+		if (NULL !== ($controller = SyncApiController::get_instance()))			// controller is non-NULL on Pull operations
+			$op = $controller->get_parent_action();
+SyncDebug::log(__METHOD__.'() parent operation: ' . var_export($op, TRUE));
+		if ('pull' === $op)
+			add_action('spectrom_sync_push_queue_complete', array($this, 'image_ref_pull_api'), 10, 1);
+		else if (NULL === $op)
+			// no parent operation means it's a Push
+			add_action('spectrom_sync_push_queue_complete', array($this, 'image_ref_api'), 10, 1);
+
 		// look for media references and call SyncApiRequest->send_media() to add media to the Push operation
 		if (isset($data['post_meta'])) {
 			$post_id = 0;
@@ -368,11 +383,51 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - response=' . var_export($resp
 
 		case SyncBeaverBuilderApiRequest::API_IMAGE_REFS:
 			break;
+
+		case SyncBeaverBuilderApiRequest::API_PULL_IMAGE_REFS:
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' response: ' . var_export($response, TRUE));
+			break;
+
+		// mimic the SyncBeaverBuilderApiRequest::API_IMAGE_REFS API call after Pull request has been processed
+		case 'pull':
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' in response to a "pull" API request. args=' . var_export($remote_args, TRUE));
+			$save_post = $_POST;									// save this to restore after simulated SyncApiController call
+
+			$site_key = $api_response->data->site_key;
+			$target_url = SyncOptions::get('target');
+
+			$_POST['action'] = SyncBeaverBuilderApiRequest::API_IMAGE_REFS;
+
+			// TODO: check returned data for references to Saved Row/Column/Module that has not yet been Sync'd
+
+			// get the data that was added to the response array
+			if (isset($remote_args['bb_image_refs'])) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' generating image ref API handling');
+				$args = array(
+					'action' => SyncBeaverBuilderApiRequest::API_IMAGE_REFS,
+					'parent_action' => 'pull',
+					'site_key' => $site_key,
+					'source' => $target_url,
+					'response' => $response,
+					'auth' => 0,
+					'post_id' => 1,
+					'bb_image_refs' => $remote_args['bb_image_refs'],	// added by image_ref_pull_api() $this->_image_refs
+				);
+
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' creating Controller with ' . var_export($args, TRUE));
+				$this->_push_controller = new SyncApiController($args);
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - returned from controller');
+SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - response=' . var_export($response, TRUE));
+
+				$_POST = $save_post;			// restore original $_POST data
+			}
+			break;
 		}
 	}
 
 	/**
 	 * Callback for 'spectrom_sync_push_queue_complete' action when Push queue is empty. Used to trigger Image Reference API call.
+	 * @param SyncApiRequest $api_request Instance of request object
 	 */
 	public function image_ref_api($api_request)
 	{
@@ -381,6 +436,17 @@ SyncDebug::log(__METHOD__ . '():' . __LINE__ . ' - response=' . var_export($resp
 			'bb_image_refs' => $this->_image_refs,
 		);
 		$api_request->api(SyncBeaverBuilderApiRequest::API_IMAGE_REFS, $data);
+	}
+
+	/**
+	 * Callback for 'spectrom_sync_push_queue_complete' action when Pull is performed. Used to respond to Image Reference Pull API call.
+	 * @param SyncApiRequest $api_request Instance of request object
+	 */
+	public function image_ref_pull_api($api_request)
+	{
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' adding image refs to response data: ' . var_export($this->_image_refs, TRUE));
+		$response = $api_request->get_response();
+		$response->set('bb_image_refs', $this->_image_refs);
 	}
 
 	/**

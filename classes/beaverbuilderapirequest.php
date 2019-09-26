@@ -9,8 +9,10 @@ class SyncBeaverBuilderApiRequest
 	const API_PUSH_SETTINGS = 'pushbeaverbuildersettings';			// push settings API call
 	const API_PULL_SETTINGS = 'pullbeaverbuildersettings';			// pull settings API call
 	const API_IMAGE_REFS = 'beaverbuilderimagerefs';				// image reference API call
+	const API_PULL_IMAGE_REFS = 'beaverbuilderimagerefspull';		// image reference pull API call
 
 	const ERROR_SETTINGS_DATA_NOT_FOUND = 700;
+	const ERROR_SAVED_CONTENT_NOT_PRESENT = 701;
 
 	const NOTICE_ = 700;
 
@@ -24,6 +26,10 @@ class SyncBeaverBuilderApiRequest
 	{
 		switch ($code) {
 		case self::ERROR_SETTINGS_DATA_NOT_FOUND:	$message = __('No settings data contained in API request.', 'wpsitesync-beaverbuilder'); break;
+		case self::ERROR_SAVED_CONTENT_NOT_PRESENT:
+			$message = sprintf(__('Saved Row/Column/Module (%1$s) needs to be Pulled before this Content can be Pulled.', 'wpsitesync-beaverbuilder'),
+				$data);
+			break;
 		}
 		return $message;
 	}

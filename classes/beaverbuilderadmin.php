@@ -51,7 +51,8 @@ class SyncBeaverBuilderAdmin
 
 		echo '<div id="spectrom_sync">';
 
-		echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content">';
+		echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'),
+			'" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content">';
 
 		echo '<button id="sync-bb-push-settings" class="button button-primary sync-button" onclick="wpsitesynccontent.beaverbuilder.push_settings(); return false;">';
 		echo '<span class="sync-button-icon dashicons dashicons-migrate"></span>';
@@ -78,6 +79,7 @@ class SyncBeaverBuilderAdmin
 		echo	'<span id="sync-message-pull-settings">', __('Pulling Settings from Target...', 'wpsitesync-beaverbuilder'), '</span>';
 		echo	'<span id="sync-message-pull-success">', __('Settings successfully Pulled from Target site. Reloading page.', 'wpsitesync-beaverbuilder'), '</span>';
 		echo	'<span id="sync-message-pull-disabled">', __('Please install and activate the WPSiteSync for Pull add-on to have Pull capability.', 'wpsitesync-beaverbuilder'), '</span>';
+		echo	'<span id="sync-message-pull-disabled-push">', __('Please Push this Content before you attempt a Pull or Upgrade WPSiteSync for Pull to v2.2+.', 'wpsitesync-beaverbuilder'), '</span>';
 		echo	'<span id="sync-message-save-settings">', __('Please Save settings before Pushing or Pulling from Target.', 'wpsitesync-beaverbuilder'), '</span>';
 		echo '</div>';
 		echo '</div>';

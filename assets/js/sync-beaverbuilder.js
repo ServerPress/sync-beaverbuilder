@@ -16,6 +16,7 @@ function WPSiteSyncContent_BeaverBuilder()
 	this.$push_button = null;							// reference to the WPSS Push buton
 	this.disable = false;								// true when WPSS push capability is disabled
 	this.success_msg = '';								// jQuery selector for Push vs. Pull success message
+	this.target_post_id = 0;							// post ID of Target Content
 	this.content_dirty = false;							// true when unsaved changes exist; otherwise false
 }
 
@@ -110,6 +111,7 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
 		action: 'spectrom_sync',
 		operation: operation,
 		post_id: post_id,
+		target_id: this.target_post_id,
 		_sync_nonce: jQuery('#_sync_nonce').html()
 	};
 
@@ -154,6 +156,15 @@ WPSiteSyncContent_BeaverBuilder.prototype.api = function(post_id, operation)
 //bb_debug_out('push() calling jQuery.ajax');
 	jQuery.ajax(push_xhr);
 //bb_debug_out('push() returned from ajax call');
+};
+
+/**
+ * Sets the selector used for displaying messages within the WPSiteSync UI metabox
+ * @param {string} sel The jQuery selector to use for displaying messages
+ */
+WPSiteSyncContent_BeaverBuilder.prototype.set_message_selector = function(sel)
+{
+	this.set_message_selector = sel;
 };
 
 /**
@@ -218,28 +229,49 @@ bb_debug_out('.push(' + post_id + ')');
 /**
  * Perform Content Pull operation
  * @param {int} post_id The post ID being Pulled
+ * @param {int} target_id The post ID on the Target, if known and Pulling previously sync'd Content
  */
-WPSiteSyncContent_BeaverBuilder.prototype.pull = function(post_id)
+WPSiteSyncContent_BeaverBuilder.prototype.pull = function(post_id, target_id)
 {
-bb_debug_out('.pull(' + post_id + ')');
+bb_debug_out('.pull(' + post_id + ',' + target_id + ')');
 	if (this.is_content_dirty()) {
 		this.set_message(jQuery('#sync-msg-save-first').html(), false, true);
 		return;
 	}
-	this.success_msg = '#sync-msg-pull-success';
-	this.set_message(jQuery('#sync-msg-starting-pull').html(), true);
-	this.api(post_id, 'pull');
+
+	if ('undefined' !== typeof(wpsitesynccontent.pull) && 'undefined' !== typeof(wpsitesynccontent.pull.show_dialog)) {
+		wpsitesynccontent.pull.show_dialog();
+	} else {
+		this.target_post_id = target_id;
+		this.success_msg = '#sync-msg-pull-success';
+		this.set_message(jQuery('#sync-msg-starting-pull').html(), true);
+		this.api(post_id, 'pull');
+	}
 };
 
 /**
  * The disabled pull operation, displays message about WPSiteSync for Pull
- * @param {int} post_id The post ID being Pulled
+ * @param {int} post_id The Source post ID being Pulled
  */
 WPSiteSyncContent_BeaverBuilder.prototype.pull_disabled = function(post_id)
 {
 bb_debug_out('.pull_disabled(' + post_id + ')');
 	this.set_message(jQuery('#sync-message-pull-disabled').html(), false, true);
 };
+
+/**
+ * The disabled pull operation, displays message about Pushing first
+ * @param {type} post_id The Source post ID being Pulled
+ */
+WPSiteSyncContent_BeaverBuilder.prototype.pull_disabled_push = function(post_id)
+{
+	// Note: this callback is used when Pull v2.1 or lower is present. User needs to Push Content
+	// before they can Pull so that we know both post IDs. With v2.2 or greater, we can search
+	// for Content to Pull.
+bb_debug_out('.pull_disabled_push(' + post_id + ')');
+	this.set_message(jQuery('#sync-message-pull-disabled-push').html(), false, true);
+};
+
 
 function bb_debug_out(msg, val)
 {

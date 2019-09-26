@@ -5,7 +5,7 @@ Plugin URI: https://wpsitesync.com/downloads/wpsitesync-beaver-builder/
 Description: Allow Beaver Builder Content and Templates to be Synced to the Target site
 Author: WPSiteSync
 Author URI: https://wpsitesync.com
-Version: 1.1 Beta
+Version: 1.2
 Text Domain: wpsitesync-beaverbuilder
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
@@ -22,9 +22,9 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		private static $_instance = NULL;
 
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
-		const PLUGIN_VERSION = '1.1';
+		const PLUGIN_VERSION = '1.2';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
-		const REQUIRED_VERSION = '1.5.1';		 // minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.5.3';		 // minimum version of WPSiteSync required for this add-on to initialize
 
 		const DATA_IMAGE_REFS = 'bb_image_refs';	// TODO: remove
 
@@ -68,10 +68,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		{
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
 
-#		if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
 #SyncDebug::log(__METHOD__ . '() no license');
-#				return;
-#			}
+				return;
+			}
 
 			add_filter('spectrom_sync_setting-strict', array($this, 'filter_setting_strict'));
 
@@ -80,10 +80,20 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 				add_action('admin_notices', array($this, 'notice_minimum_version'));
 				return;
 			}
+
+			if (!SyncOptions::has_cap())
+				return;
+
 			// initialize admin class
-			if (is_admin() || (defined('DOING_AJAX') && DOING_AJAX)) {
+			if (is_admin() || (defined('DOING_AJAX') && DOING_AJAX) || isset($_GET['fl_builder'])) {
 				$this->_load_class('beaverbuilderadmin');
 				SyncBeaverBuilderAdmin::get_instance();
+				// if the Beaver Builder editor is active, output the WPSS for Beaver Builder content in the footer
+				if (isset($_GET['fl_builder'])) {
+					add_action('wp_footer', array(SyncBeaverBuilderAdmin::get_instance(), 'admin_print_scripts'));
+					WPSiteSync_Pull::get_instance()->load_class('pulladmin');
+					add_action('wp_enqueue_scripts', array(SyncPullAdmin::get_instance(), 'admin_enqueue_scripts'));
+				}
 			}
 
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
@@ -104,6 +114,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 
 			// filter for blocking images within the bb-plugin directory from being Pushed
 			add_filter('spectrom_sync_send_media_attachment', array($this, 'filter_send_media_attachment'), 10, 3);
+//			add_action('spectrom_sync_pull_complete', array($this, 'pull_complete'));
 
 			// hooks for adding settings push and image reference APIs
 			add_filter('spectrom_sync_api_request_action', array($this, 'api_request_action'), 20, 3); // called by SyncApiRequest
@@ -200,6 +211,30 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 			if (FALSE !== strpos($url, 'wp-content') && FALSE !== strpos($url, 'plugins') && FALSE !== strpos($url, 'bb-plugin'))
 				$send = FALSE;
 			return $send;
+		}
+
+		/**
+		 * Callback used when processing of Pull request is complete
+		 */
+		public function pull_complete()
+		{
+SyncDebug::log(__METHOD__.'():'.__LINE__ . ' post=' . var_export($_POST, TRUE));
+			if (isset($_POST['id_refs'])) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' id_refs=' . var_export($_POST['id_refs'], TRUE));
+				$input = new SyncInput();
+				$post_id = $input->post_int('post_id');
+				$id_refs = $input->post_raw('id_refs', array());
+
+				$api_data = array(
+					'parent_action' => 'pull',
+					'post_id' => $post_id,
+					'id_refs' => $id_refs,
+				);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' calling api("push_complete") with ' . var_export($api_data, TRUE));
+				$this->_api_request->api('push_complete', $api_data);
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' done with api("push_complete")');
+			}
+else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' no [id_refs] element in POST content');
 		}
 
 		/**
@@ -353,10 +388,17 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		public function enqueue_scripts()
 		{
 //SyncDebug::log(__METHOD__.'():' . __LINE__ . ' registering "sync-beaverbuilder" script');
+			wp_register_script('sync', WPSiteSyncContent::get_asset('js/sync.js'), array('jquery'), WPSiteSyncContent::PLUGIN_VERSION, TRUE);
 			wp_register_script('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/js/sync-beaverbuilder.js', array('jquery'), self::PLUGIN_VERSION, TRUE);
+
+			wp_register_style('sync-admin', WPSiteSyncContent::get_asset('css/sync-admin.css'), array(), WPSiteSyncContent::PLUGIN_VERSION, 'all');
 			wp_register_style('sync-beaverbuilder', plugin_dir_url(__FILE__) . 'assets/css/sync-beaverbuilder.css', array(), self::PLUGIN_VERSION);
 
 			if (isset($_GET['fl_builder'])) {
+				if (class_exists('WPSiteSync_Pull', FALSE)) {
+					wp_enqueue_script('sync');
+					SyncPullAdmin::get_instance()->admin_enqueue_scripts('post.php');
+				}
 				// only need to enqueue these if the Beaver Builder editor is being loaded on the page
 				wp_enqueue_script('sync-beaverbuilder');
 				wp_enqueue_style('sync-beaverbuilder');
@@ -374,14 +416,38 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 			echo '<div id="sync-beaverbuilder-ui" style="display:none">';
 			echo '<span id="sync-separator" class="fl-builder-button"></span>';
 
+			// look up the Target post ID if it's available
+			$target_post_id = 0;
+			$model = new SyncModel();
+			$sync_data = $model->get_sync_data($post->ID);
+			if (NULL !== $sync_data)
+				$target_post_id = abs($sync_data->target_content_id);
+$target_post_id = 0;
+echo '<!-- WPSiteSync_Pull class ', (class_exists('WPSiteSync_Pull', FALSE) ? 'exists' : 'does not exist'), ' -->', PHP_EOL;
+			// check for existence and version of WPSS Pull
 			if (class_exists('WPSiteSync_Pull', FALSE)) {
 				$class = 'fl-builder-button-primary';
 				$js_function = 'pull';
+				if (version_compare(WPSiteSync_Pull::PLUGIN_VERSION, '2.1', '<=')) {
+echo '<!-- Pull v2.1 -->', PHP_EOL;
+					// it's <= v2.1. if there's no previous Push we can't do a pull. disable it
+					if (0 === $target_post_id) {
+						$class = 'fl-builder-button';
+						$js_function = 'pull_disabled_push';
+					}
+				} else if (version_compare(WPSiteSync_Pull::PLUGIN_VERSION, '2.2', '>=')) {
+echo '<!-- Pull v2.2+ -->', PHP_EOL;
+					// it's >= v2.2. we can do a search so Pull without previous Push is allowed
+					$class = 'fl-builder-button-primary';
+					$js_function = 'pull';
+				}
 			} else {
 				$class = 'fl-builder-button';
 				$js_function = 'pull_disabled';
 			}
-			echo '<span id="sync-bb-pull" class="fl-builder-button ', $class, '" onclick="wpsitesync_beaverbuilder.', $js_function, '(', $post->ID, ');return false">';
+
+			echo '<span id="sync-bb-pull" class="fl-builder-button ', $class, '" ',
+				' onclick="wpsitesync_beaverbuilder.', $js_function, '(', $post->ID, ',', $target_post_id, ');return false">';
 			echo '<span class="sync-button-icon sync-button-icon-rotate dashicons dashicons-migrate"></span> ';
 			echo __('Pull from Target', 'wpsitesync-beaverbuilder'), '</span>';
 
@@ -389,7 +455,7 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 			echo '<span class="sync-button-icon dashicons dashicons-migrate"></span> ';
 			echo __('Push to Target', 'wpsitesync-beaverbuilder'), '</span>';
 
-			echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" alt="WPSiteSync logo" title="WPSiteSync for Content" >';
+			echo '<img id="sync-logo" src="', WPSiteSyncContent::get_asset('imgs/wpsitesync-logo-blue.png'), '" width="80" height="30" style="width:97px;height:35px" alt="WPSiteSync logo" title="WPSiteSync for Content" >';
 			echo '<br/><span id="sync-target-info">', sprintf(__('Target site: <u>%1$s</u>', 'wpsitesync-beaverbuilder'), SyncOptions::get('host')), ' </span>';
 
 //			echo '<button id="sync-bb-push" class="fl-builder-button fl-builder-button-primary">', __('Push', 'wpsitesync-beaverbuilder'), '</button>';
@@ -413,6 +479,11 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 			echo '<span id="_sync_nonce">', wp_create_nonce('sync'), '</span>';
 			echo '</div>';
 
+			if (class_exists('WPSiteSync_Pull', FALSE)) {
+				// if the Pull add-on is active, use it to output the Search modal #24
+				SyncPullAdmin::get_instance()->output_dialog_modal($post->post_type, 'post');
+			}
+
 			echo '</div>'; // #sync-beaverbuilder-ui
 		}
 
@@ -423,10 +494,10 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 		 */
 		public function allow_custom_post_types($post_types)
 		{
-#			if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
+			if (WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
 				$post_types[] = 'fl-builder-template';	// bb templates
 				$post_types[] = 'fl-theme-layout';	 // bb themes #14
-#			}
+			}
 
 			return $post_types;
 		}
