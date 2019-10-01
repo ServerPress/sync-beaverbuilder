@@ -91,8 +91,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 				// if the Beaver Builder editor is active, output the WPSS for Beaver Builder content in the footer
 				if (isset($_GET['fl_builder'])) {
 					add_action('wp_footer', array(SyncBeaverBuilderAdmin::get_instance(), 'admin_print_scripts'));
-					WPSiteSync_Pull::get_instance()->load_class('pulladmin');
-					add_action('wp_enqueue_scripts', array(SyncPullAdmin::get_instance(), 'admin_enqueue_scripts'));
+					if (class_exists('WPSiteSync_Pull', FALSE)) {
+						WPSiteSync_Pull::get_instance()->load_class('pulladmin');
+						add_action('wp_enqueue_scripts', array(SyncPullAdmin::get_instance(), 'admin_enqueue_scripts'));
+					}
 				}
 			}
 
@@ -479,9 +481,9 @@ echo '<!-- Pull v2.2+ -->', PHP_EOL;
 			echo '<span id="_sync_nonce">', wp_create_nonce('sync'), '</span>';
 			echo '</div>';
 
-			if (class_exists('WPSiteSync_Pull', FALSE)) {
+			if (class_exists('WPSiteSync_Pull', FALSE) && version_compare(WPSiteSync_Pull::PLUGIN_VERSION, '2.2', '>=')) {
 				// if the Pull add-on is active, use it to output the Search modal #24
-				SyncPullAdmin::get_instance()->output_dialog_modal($post->post_type, 'post');
+				SyncPullAdmin::get_instance()->output_dialog_modal($post->ID, $post->post_type, 'post');
 			}
 
 			echo '</div>'; // #sync-beaverbuilder-ui
