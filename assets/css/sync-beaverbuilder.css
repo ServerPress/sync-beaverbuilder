@@ -51,8 +51,9 @@ z-index: 1000;
 }
 
 #sync-target-info {
-	margin-top: .1rem;
+	margin-top: 0;
 	margin-right: 1.5rem;
+    line-height: .9rem;
 }
 
 #sync-message-dismiss {
