@@ -78,9 +78,10 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' args=' . SyncDebug::arr_sanitize(
 	{
 SyncDebug::log(__METHOD__ . '()'); //  data=' . var_export($data, TRUE)); // . var_export($data, TRUE));
 		// check to see if this is a Pull operation or a Push and connect the appropriate handler for after queue handling
-		$op = NULL;
-		if (NULL !== ($controller = SyncApiController::get_instance()))			// controller is non-NULL on Pull operations
-			$op = $controller->get_parent_action();
+//		$op = NULL;
+//		if (NULL !== ($controller = SyncApiController::get_instance()))			// controller is non-NULL on Pull operations
+//			$op = $controller->get_parent_action();
+		$op = WPSiteSyncContent::get_instance()->get_parent_action();
 SyncDebug::log(__METHOD__.'() parent operation: ' . var_export($op, TRUE));
 		if ('pull' === $op)
 			add_action('spectrom_sync_push_queue_complete', array($this, 'image_ref_pull_api'), 10, 1);

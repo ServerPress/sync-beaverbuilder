@@ -5,7 +5,7 @@ Plugin URI: https://wpsitesync.com/downloads/wpsitesync-beaver-builder/
 Description: Allow Beaver Builder Content and Templates to be Synced to the Target site
 Author: WPSiteSync
 Author URI: https://wpsitesync.com
-Version: 1.2
+Version: 1.2.1
 Text Domain: wpsitesync-beaverbuilder
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
@@ -22,7 +22,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		private static $_instance = NULL;
 
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
-		const PLUGIN_VERSION = '1.2';
+		const PLUGIN_VERSION = '1.2.1';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
 		const REQUIRED_VERSION = '1.5.3';		 // minimum version of WPSiteSync required for this add-on to initialize
 
@@ -66,6 +66,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		 */
 		public function init()
 		{
+SyncDebug::log(__METHOD__.'():' . __LINE__);
 			add_filter('spectrom_sync_active_extensions', array($this, 'filter_active_extensions'), 10, 2);
 
 			if (!WPSiteSyncContent::get_instance()->get_license()->check_license('sync_beaverbuilder', self::PLUGIN_KEY, self::PLUGIN_NAME)) {
@@ -73,6 +74,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 				return;
 			}
 
+			add_action('wp_loaded', array($this, 'wp_loaded'));
 			add_filter('spectrom_sync_setting-strict', array($this, 'filter_setting_strict'));
 
 			// check for minimum WPSiteSync version
@@ -81,8 +83,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 				return;
 			}
 
-			if (!SyncOptions::has_cap())
-				return;
+			add_action('spectrom_sync_api_init', array($this, 'api_init'));
 
 			// initialize admin class
 			if (is_admin() || (defined('DOING_AJAX') && DOING_AJAX) || isset($_GET['fl_builder'])) {
@@ -98,6 +99,7 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 				}
 			}
 
+			// hooks for adding UI to Beaver Builder pages
 			add_filter('spectrom_sync_allowed_post_types', array($this, 'allow_custom_post_types'));
 			// use the 'spectrom_sync_api_request' filter to add any necessary taxonomy information
 //			add_filter('spectrom_sync_api_request', array($this, 'add_bb_data'), 10, 3);
@@ -107,6 +109,33 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 				add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
 				add_action('wp_footer', array($this, 'output_html_content'));
 			}
+		}
+
+		/**
+		 * Callback for the 'wp_loaded' action. Used to display admin notice if WPSiteSync for Content is not activated
+		 */
+		public function wp_loaded()
+		{
+			$continue = TRUE;
+			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('activate_plugins'))
+				add_action('admin_notices', array($this, 'notice_requires_wpss'));
+
+			if (!class_exists('FLBuilderLoader', FALSE) && current_user_can('activate_plugins'))
+				add_action('admin_notices', array($this, 'notice_requires_bb'));
+		}
+
+		/**
+		 * Initialize hooks and filters for API handling
+		 */
+		public function api_init()
+		{
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' checking capabilities');
+			if (!SyncOptions::has_cap()) {
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' user does not have capabilities');
+//				return;
+			}
+
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' initializing api handlers');
 
 			// hooks for adjusting Push content
 			add_filter('spectrom_sync_api_push_content', array($this, 'filter_push_content'), 10, 2); // TODO: use this or 'spectrom_sync_api_request'
@@ -125,19 +154,6 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 
 			add_filter('spectrom_sync_error_code_to_text', array($this, 'filter_error_codes'), 10, 3);
 			add_filter('spectrom_sync_notice_code_to_text', array($this, 'filter_notice_codes'), 10, 2);
-		}
-
-		/**
-		 * Callback for the 'wp_loaded' action. Used to display admin notice if WPSiteSync for Content is not activated
-		 */
-		public function wp_loaded()
-		{
-			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('activate_plugins')) {
-				add_action('admin_notices', array($this, 'notice_requires_wpss'));
-			}
-			if (!class_exists('FLBuilderLoader', FALSE) && current_user_can('activate_plugins')) {
-				add_action('admin_notices', array($this, 'notice_requires_bb'));
-			}
 		}
 
 		/**
@@ -298,6 +314,7 @@ else SyncDebug::log(__METHOD__.'():' . __LINE__ . ' no [id_refs] element in POST
 		 */
 		public function api_controller_request($return, $action, SyncApiResponse $response)
 		{
+SyncDebug::log(__METHOD__.'():' . __LINE__ . ' got a "' . $action . '" request from SyncApiController');
 			$this->_get_target_api();
 			return $this->_target_api->api_controller_request($return, $action, $response);
 		}
@@ -491,7 +508,7 @@ echo '<!-- Pull v2.2+ -->', PHP_EOL;
 
 		/**
 		 * Adds all custom post types to the list of `spectrom_sync_allowed_post_types`
-		 * @param  array $post_types The post types to allow
+		 * @param array $post_types The post types to allow
 		 * @return array The allowed post types, with the bb types added
 		 */
 		public function allow_custom_post_types($post_types)
@@ -550,7 +567,7 @@ echo '<!-- Pull v2.2+ -->', PHP_EOL;
 			$api = new SyncBeaverBuilderApiRequest();
 			return $api->filter_notice_codes($message, $code);
 		}
-	
+
 		/**
 		 * Adds custom taxonomy information to the data array collected for the current post
 		 * @param array $data The array of data that will be sent to the Target
@@ -569,12 +586,12 @@ if (!isset($data['post_data']))
 else if (!isset($data['post_data']['post_type']))
 	SyncDebug::log(__METHOD__.'() no post_type element found in ' . var_export($data['post_data'], TRUE));
 
-		  // TODO: do we need to check for allowed post types or just post/page?
-		  if (!in_array($data['post_data']['post_type'], array('post', 'page'))) {
-			  // TODO: collect CPT taxonomy data and add to array
-		  }
-		  // TODO: add custom taxonomy information
-		  return $data;
+			// TODO: do we need to check for allowed post types or just post/page?
+			if (!in_array($data['post_data']['post_type'], array('post', 'page'))) {
+				// TODO: collect CPT taxonomy data and add to array
+			}
+			// TODO: add custom taxonomy information
+			return $data;
 		} */
 
 		/**
