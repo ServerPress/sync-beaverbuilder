@@ -337,7 +337,7 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 				$api = new SyncApiRequest();
 				$api_response = $api->api('pushbeaverbuildersettings');
 				$response->copy($api_response);
-				if (!$api->response->has_errors())
+				if (!$api->get_response()->has_errors())
 					$response->success(TRUE);
 				$handled = TRUE;
 			} else if ('pullbeaverbuildersettings' === $operation) {

@@ -7,3 +7,4 @@
 * fix: call FLBuilderModel::delete_all_asset_cache() to clear cache data after Push is completed.
 * fix: resolve problems with Pull Settings and Pull Content.
 * enhancement: Add support for Saved Rows, Modules and Columns. (thanks Johncarlo S.)
+* fix: call to member function on null error.
