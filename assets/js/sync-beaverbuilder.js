@@ -95,9 +95,9 @@ bb_debug_out('enable_sync() - turning on the button');
 
 WPSiteSyncContent_BeaverBuilder.prototype.is_content_dirty = function()
 {
-bb_debug_out('is_content_dirty() = ' + (this.content_dirty ? 'TRUE': 'FALSE'))
+bb_debug_out('is_content_dirty() = ' + (this.content_dirty ? 'TRUE': 'FALSE'));
 	return this.content_dirty;
-}
+};
 
 /**
  * Common method to perform API operations
