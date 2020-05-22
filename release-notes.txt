@@ -8,3 +8,4 @@
 * fix: resolve problems with Pull Settings and Pull Content.
 * enhancement: Add support for Saved Rows, Modules and Columns. (thanks Johncarlo S.)
 * fix: call to member function on null error.
+* enhancement: Disable plugin and show notice if Beaver Builder is not active.

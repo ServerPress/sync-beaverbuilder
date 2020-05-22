@@ -22,9 +22,10 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		private static $_instance = NULL;
 
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
-		const PLUGIN_VERSION = '1.2.1';
+		const PLUGIN_VERSION = '1.2.2';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
-		const REQUIRED_VERSION = '1.5.3';		 // minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.5.3';		// minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_BB_VERSION = '2.0.0';	// minimum version of Beaver Builder required for this add-on to initialize
 
 		const DATA_IMAGE_REFS = 'bb_image_refs';	// TODO: remove
 
@@ -117,12 +118,24 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 		public function wp_loaded()
 		{
 			$continue = TRUE;
-			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('activate_plugins'))
+			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('install_plugins'))
 				add_action('admin_notices', array($this, 'notice_requires_wpss'));
 
-			if (!class_exists('FLBuilderLoader', FALSE) && current_user_can('activate_plugins'))
+			// !defined('FL_BUILDER_VERSION')
+			if (!class_exists('FLBuilderLoader', FALSE) && current_user_can('install_plugins')) {
 				add_action('admin_notices', array($this, 'notice_requires_bb'));
+				add_action('admin_init', array($this, 'disable_plugin'));	#61
+			}
 		}
+
+		/**
+		 * Disables the plugin if EDD is not active or too old
+		 */
+		public function disable_plugin()
+		{
+			deactivate_plugins(plugin_basename(__FILE__));
+		}
+
 
 		/**
 		 * Initialize hooks and filters for API handling
@@ -162,7 +175,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__ . ' initializing api handlers');
 		public function notice_requires_bb()
 		{
 			$this->_show_notice(
-				sprintf(__('WPSiteSync for Beaver Builder requires the Beaver Builder plugin to be installed and activated. Please <a href="%1$s">click here</a> to activate.', 'wpsitesync-beaverbuilder'),
+				sprintf(__('WPSiteSync for Beaver Builder requires the <em>Beaver Builder</em> plugin to be installed and activated. Please <a href="%1$s">click here</a> to activate.', 'wpsitesync-beaverbuilder'),
 					admin_url('plugins.php')),
 				'notice-warning');
 		}
