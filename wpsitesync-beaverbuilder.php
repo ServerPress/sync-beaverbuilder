@@ -118,8 +118,10 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 		public function wp_loaded()
 		{
 			$continue = TRUE;
-			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('install_plugins'))
+			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('install_plugins')) {
 				add_action('admin_notices', array($this, 'notice_requires_wpss'));
+				add_action('admin_init', array($this, 'disable_plugin'));
+			}
 
 			// !defined('FL_BUILDER_VERSION')
 			if (!class_exists('FLBuilderLoader', FALSE) && current_user_can('install_plugins')) {
