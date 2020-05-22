@@ -131,7 +131,7 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 		}
 
 		/**
-		 * Disables the plugin if EDD is not active or too old
+		 * Disables the plugin if WPSiteSync not installed or Beaver Builder is too old
 		 */
 		public function disable_plugin()
 		{
