@@ -273,6 +273,11 @@ bb_debug_out('.pull_disabled_push(' + post_id + ')');
 };
 
 
+/**
+ * Performs logging to the console
+ * @param {string} msg The message to be displayed
+ * @param {object} val Optional data value to output along with the message
+ */
 function bb_debug_out(msg, val)
 {
 //return;
