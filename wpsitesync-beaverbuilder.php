@@ -5,7 +5,7 @@ Plugin URI: https://wpsitesync.com/downloads/wpsitesync-beaver-builder/
 Description: Allow Beaver Builder Content and Templates to be Synced to the Target site
 Author: WPSiteSync
 Author URI: https://wpsitesync.com
-Version: 1.2.1
+Version: 1.3
 Text Domain: wpsitesync-beaverbuilder
 
 The PHP code portions are distributed under the GPL license. If not otherwise stated, all
@@ -22,9 +22,9 @@ if (!class_exists('WPSiteSync_BeaverBuilder')) {
 		private static $_instance = NULL;
 
 		const PLUGIN_NAME = 'WPSiteSync for Beaver Builder';
-		const PLUGIN_VERSION = '1.2.2';
+		const PLUGIN_VERSION = '1.3';
 		const PLUGIN_KEY = '940382e68ffadbfd801c7caa41226012';
-		const REQUIRED_VERSION = '1.5.3';		// minimum version of WPSiteSync required for this add-on to initialize
+		const REQUIRED_VERSION = '1.6';			// minimum version of WPSiteSync required for this add-on to initialize
 		const REQUIRED_BB_VERSION = '2.0.0';	// minimum version of Beaver Builder required for this add-on to initialize
 
 		const DATA_IMAGE_REFS = 'bb_image_refs';	// TODO: remove
@@ -117,7 +117,6 @@ SyncDebug::log(__METHOD__.'():' . __LINE__);
 		 */
 		public function wp_loaded()
 		{
-			$continue = TRUE;
 			if (!class_exists('WPSiteSyncContent', FALSE) && current_user_can('install_plugins')) {
 				add_action('admin_notices', array($this, 'notice_requires_wpss'));
 				add_action('admin_init', array($this, 'disable_plugin'));
@@ -456,7 +455,7 @@ SyncDebug::log(__METHOD__ . '() found action: ' . $operation);
 			$sync_data = $model->get_sync_data($post->ID);
 			if (NULL !== $sync_data)
 				$target_post_id = abs($sync_data->target_content_id);
-$target_post_id = 0;
+
 echo '<!-- WPSiteSync_Pull class ', (class_exists('WPSiteSync_Pull', FALSE) ? 'exists' : 'does not exist'), ' -->', PHP_EOL;
 			// check for existence and version of WPSS Pull
 			if (class_exists('WPSiteSync_Pull', FALSE)) {
